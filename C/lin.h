@@ -338,6 +338,8 @@
 #ifndef WCSLIB_LIN
 #define WCSLIB_LIN
 
+#include "wcserr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -345,7 +347,13 @@ extern "C" {
 
 extern const char *lin_errmsg[];
 
-
+enum lin_errmsg_enum {
+  LINERR_SUCCESS      = 0,
+  LINERR_NULL_POINTER = 1,
+  LINERR_MEMORY       = 2,
+  LINERR_SINGULAR_MTX = 3
+};
+  
 struct linprm {
   /* Initialization flag (see the prologue above).                          */
   /*------------------------------------------------------------------------*/
@@ -367,6 +375,10 @@ struct linprm {
   int i_naxis;			/* The remainder are for memory management. */
   int m_flag, m_naxis;
   double *m_crpix, *m_pc, *m_cdelt;
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the linprm struct in int units, used by the Fortran wrappers. */

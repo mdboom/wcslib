@@ -42,8 +42,8 @@ const int LINSET = 137;
 
 /* Map status return value to message. */
 const char *lin_errmsg[] = {
-   "Success",
-   "Null linprm pointer passed",
+  "Success",
+  "Null linprm pointer passed",
   "Memory allocation failed",
   "PCi_ja matrix is singular"};
 
@@ -59,9 +59,18 @@ struct linprm *lin;
   int i, j;
   double *pc;
 
+  /* ERRTODO: No way to to set error message here because there's
+     nowhere to put it. */
   if (lin == 0x0) return 1;
+
+  /* Initialize the error structure first, so we can start returning
+     errors. */
+  wcserr_ini(&lin->err);
+  
   if (naxis <= 0) {
-    return 2;
+    return WCSERR_SET(
+      &lin->err, LINERR_MEMORY,
+      "naxis must be positive (got %d)", naxis);
   }
 
   if (lin->flag == -1 || lin->m_flag != LINSET) {
@@ -92,7 +101,7 @@ struct linprm *lin;
 
       } else {
         if (!(lin->crpix = calloc(naxis, sizeof(double)))) {
-          return 2;
+          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
         }
 
         lin->m_flag  = LINSET;
@@ -109,7 +118,7 @@ struct linprm *lin;
       } else {
         if (!(lin->pc = calloc(naxis*naxis, sizeof(double)))) {
           linfree(lin);
-          return 2;
+          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
         }
 
         lin->m_flag  = LINSET;
@@ -126,7 +135,7 @@ struct linprm *lin;
       } else {
         if (!(lin->cdelt = calloc(naxis, sizeof(double)))) {
           linfree(lin);
-          return 2;
+          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
         }
 
         lin->m_flag  = LINSET;

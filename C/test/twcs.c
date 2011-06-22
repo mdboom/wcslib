@@ -46,6 +46,7 @@
 
 
 void parser(struct wcsprm *);
+void test_errors();
 
 /* Reporting tolerance. */
 const double tol = 1.0e-10;
@@ -172,6 +173,9 @@ int main()
   wcs->flag = -1;
   parser(wcs);
 
+  /* The following tests that error messages are generated */
+  test_errors();
+  
   printf("\nReporting tolerance %5.1g pixel.\n", tol);
 
 
@@ -314,4 +318,84 @@ struct wcsprm *wcs;
   }
 
   return;
+}
+
+int check_error(struct wcsprm *wcs, char *name, int status, int exstatus, char *exmessage)
+{
+  if (status == exstatus && strcmp(wcs->err.msg, exmessage) == 0) {
+    return 0;
+  } else {
+    printf("%s ERROR Expected %d:'%s', got %d:'%s'\n",
+           name, exstatus, exmessage, status, wcs->err.msg);
+    return 1;
+  }
+}
+
+void test_errors()
+{
+
+  struct wcsprm wcs;
+  int status;
+  int i;
+  char multiple_cubeface[2][9] = {
+    "CUBEFACE", "CUBEFACE"
+  };
+  char projection_code[2][9] = {
+    "RA---FOO", "DEC--BAR"
+  };
+  char unmatched[2][9] = {
+    "RA---TAN", "FREQ-LOG"
+  };
+  
+  wcs.flag = -1;
+  status = wcsini(1, -32, &wcs);
+  if (check_error(
+        &wcs, "wcsini", status,
+        WCSERR_MEMORY, "naxis must be positive (got -32)"))
+    return;
+
+  wcs.flag = -1;
+  status = wcsini(1, 1 << 30, &wcs);
+  if (check_error(
+        &wcs, "wcsini", status,
+        WCSERR_MEMORY, "Memory allocation failed"))
+    return;
+
+  wcs.flag = -1;
+  status = wcsini(1, 2, &wcs);
+  if (check_error(
+        &wcs, "wcsini", status,
+        WCSERR_SUCCESS, ""))
+    return;
+
+  for (i = 0; i < 2; i++) {
+    strcpy(wcs.ctype[i], &multiple_cubeface[i][0]);
+  }
+  status = wcsset(&wcs);
+  if (check_error(
+        &wcs, "wcsset", status,
+        WCSERR_BAD_CTYPE, "Multiple CUBEFACE axes (in CTYPE0  and CTYPE1 )"))
+    return;
+
+  wcs.flag = -1;
+  status = wcsini(1, 2, &wcs);
+  for (i = 0; i < 2; i++) {
+    strcpy(wcs.ctype[i], &projection_code[i][0]);
+  }
+  status = wcsset(&wcs);
+  if (check_error(
+        &wcs, "wcsset", status,
+        WCSERR_BAD_CTYPE, "Unrecognized projection code (FOO in CTYPE0 )"))
+    return;
+  
+  wcs.flag = -1;
+  status = wcsini(1, 2, &wcs);
+  for (i = 0; i < 2; i++) {
+    strcpy(wcs.ctype[i], &unmatched[i][0]);
+  }
+  status = wcsset(&wcs);
+  if (check_error(
+        &wcs, "wcsset", status,
+        WCSERR_BAD_CTYPE, "Unmatched celestial axes"))
+    return;
 }

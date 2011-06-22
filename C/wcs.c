@@ -95,10 +95,18 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
   int i, j, k, status;
   double *cd;
 
+  /* ERRTODO: We can't return an error message here because we have
+     nowhere to put it. */
   if (wcs == 0x0) return 1;
 
+  /* Initialize the error structure first, so we can start returning
+     errors. */
+  wcserr_ini(&wcs->err);
+
   if (naxis <= 0) {
-    return 2;
+    return WCSERR_SET(
+      &wcs->err, WCSERR_MEMORY,
+      "naxis must be positive (got %d)", naxis);
   }
 
   /* Initialize memory management. */
@@ -164,7 +172,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
 
       } else {
         if (!(wcs->crpix = calloc(naxis, sizeof(double)))) {
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -181,7 +189,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->pc = calloc(naxis*naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -198,7 +206,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->cdelt = calloc(naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -215,7 +223,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->crval = calloc(naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -232,7 +240,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->cunit = calloc(naxis, sizeof(char [72])))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -249,7 +257,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->ctype = calloc(naxis, sizeof(char [72])))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -267,7 +275,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
         if (NPVMAX) {
           if (!(wcs->pv = calloc(NPVMAX, sizeof(struct pvcard)))) {
             wcsfree(wcs);
-            return 2;
+            return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
           }
         } else {
           wcs->pv = (struct pvcard *)0;
@@ -290,7 +298,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
         if (NPSMAX) {
           if (!(wcs->ps = calloc(NPSMAX, sizeof(struct pscard)))) {
             wcsfree(wcs);
-            return 2;
+            return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
           }
         } else {
           wcs->ps = (struct pscard *)0;
@@ -312,7 +320,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->cd = calloc(naxis*naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -329,7 +337,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->crota = calloc(naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -346,7 +354,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->colax = calloc(naxis, sizeof(int)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -363,7 +371,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->cname = calloc(naxis, sizeof(char [72])))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -380,7 +388,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->crder = calloc(naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -397,7 +405,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
       } else {
         if (!(wcs->csyer = calloc(naxis, sizeof(double)))) {
           wcsfree(wcs);
-          return 2;
+          return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
         }
 
         wcs->m_flag  = WCSSET;
@@ -418,7 +426,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
   wcs->lin.cdelt  = wcs->cdelt;
   wcs->lin.m_flag = 0;
   if ((status = linini(0, naxis, &(wcs->lin)))) {
-    return status;
+    return wcserr_copy(&(wcs->err), &(wcs->lin.err));
   }
 
 
@@ -1005,6 +1013,8 @@ int wcsfree(struct wcsprm *wcs)
 
   wcs->flag = 0;
 
+  wcserr_ini(&wcs->err);
+
   return linfree(&(wcs->lin));
 }
 
@@ -1395,8 +1405,11 @@ int wcsset(struct wcsprm *wcs)
   struct spcprm *wcsspc = &(wcs->spc);
 
 
-  /* Determine axis types from CTYPEia. */
+  /* ERRTODO: No way to to set error message here because there's
+     nowhere to put it. */
   if (wcs == 0x0) return 1;
+
+  /* Determine axis types from CTYPEia. */
   if ((status = wcs_types(wcs))) {
     return status;
   }
@@ -1624,7 +1637,8 @@ int wcs_types(struct wcsprm *wcs)
   char ctypei[16], pcode[4], requir[9], scode[4], specsys[9];
   int i, j, m, naxis, *ndx = 0x0, type;
 
-
+  /* ERRTODO: No way to to set error message here because there's
+     nowhere to put it. */
   if (wcs == 0x0) return 1;
 
   /* Parse the CTYPEia keyvalues. */
@@ -1639,6 +1653,9 @@ int wcs_types(struct wcsprm *wcs)
   naxis = wcs->naxis;
   if (wcs->types) free(wcs->types);
   wcs->types = calloc(naxis, sizeof(int));
+  if (wcs->types == NULL) {
+    return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
+  }
 
   for (i = 0; i < naxis; i++) {
     /* Null fill. */
@@ -1715,7 +1732,10 @@ int wcs_types(struct wcsprm *wcs)
           wcs->cubeface = i;
         } else {
           /* Multiple CUBEFACE axes! */
-          return 4;
+          return WCSERR_SET(
+            &wcs->err, WCSERR_BAD_CTYPE,
+            "Multiple CUBEFACE axes (in CTYPE%d%s and CTYPE%d%s)",
+            wcs->cubeface, wcs->alt, i, wcs->alt);
         }
 
       } else if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
@@ -1735,7 +1755,10 @@ int wcs_types(struct wcsprm *wcs)
 
       /* Check uniqueness. */
       if (wcs->spec >= 0) {
-        return 4;
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_CTYPE,
+          "Multiple spectral axes (in CTYPE%d%s and CTYPE%d%s)",
+          wcs->spec, wcs->alt, i, wcs->alt);
       }
 
       wcs->spec = i;
@@ -1758,7 +1781,10 @@ int wcs_types(struct wcsprm *wcs)
       if (j == nalias) {
         /* Not a recognized algorithm code of any type. */
         wcs->types[i] = -1;
-        return 4;
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_CTYPE,
+          "Unrecognized projection code (%s in CTYPE%d%s)",
+          ctypei+5, i, wcs->alt);
       }
     }
 
@@ -1810,7 +1836,10 @@ int wcs_types(struct wcsprm *wcs)
 
         wcs->lng = -1;
         wcs->lat = -1;
-        return 4;
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_CTYPE,
+          "Unrecognized celestial type (%5s in CTYPE%d%s)",
+          ctypei, i, wcs->alt);
       }
 
       if (wcs->lat >= 0) wcs->types[i]++;
@@ -1823,7 +1852,10 @@ int wcs_types(struct wcsprm *wcs)
         /* Inconsistent projection types. */
         wcs->lng = -1;
         wcs->lat = -1;
-        return 4;
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_CTYPE,
+          "Inconsistent projection types (expected %s, got %s in CTYPE%d%s)",
+          requir, ctypei, i, wcs->alt);
       }
 
       *ndx = i;
@@ -1836,7 +1868,9 @@ int wcs_types(struct wcsprm *wcs)
     /* Unmatched celestial axis. */
     wcs->lng = -1;
     wcs->lat = -1;
-    return 4;
+    return WCSERR_SET(
+      &wcs->err, WCSERR_BAD_CTYPE,
+      "Unmatched celestial axes");
   }
 
   /* Table group numbers. */
@@ -1846,6 +1880,7 @@ int wcs_types(struct wcsprm *wcs)
 
       type = (wcs->types[i] / 100) % 10;
       if (type != 5) {
+        /* ERRTODO: How to handle this? */
         return 4;
       }
       wcs->types[i] += 10 * j;

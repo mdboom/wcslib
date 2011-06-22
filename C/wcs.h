@@ -1231,6 +1231,7 @@
 #include "cel.h"
 #include "spc.h"
 #include "tab.h"
+#include "wcserr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1246,6 +1247,24 @@ extern "C" {
 
 extern const char *wcs_errmsg[];
 
+enum wcs_errmsg_enum {
+  WCSERR_SUCCESS          = 0,
+  WCSERR_NULL_POINTER     = 1,
+  WCSERR_MEMORY           = 2,
+  WCSERR_SINGULAR_MTX     = 3,
+  WCSERR_BAD_CTYPE        = 4,
+  WCSERR_BAD_PARAM        = 5,
+  WCSERR_BAD_COORD_TRANS  = 6,
+  WCSERR_ILL_COORD_TRANS  = 7,
+  WCSERR_BAD_PIX_COORDS   = 8,
+  WCSERR_BAD_WORLD_COORDS = 9,
+  WCSERR_BAD_WORLD_COORD  = 10,
+  WCSERR_NO_SOLUTION      = 11,
+  WCSERR_BAD_SUBIMAGE     = 12,
+  WCSERR_NON_SEPARABLE    = 13
+};
+
+  
 /* Struct used for storing PVi_ma keywords. */
 struct pvcard {
   int i;			/* Axis number, as in PVi_ma (1-relative).  */
@@ -1374,6 +1393,10 @@ struct wcsprm {
   double *m_crder, *m_csyer;
   struct tabprm *m_tab;
   struct wtbarr *m_wtb;
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the wcsprm struct in int units, used by the Fortran wrappers. */
