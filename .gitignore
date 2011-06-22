@@ -1,0 +1,35 @@
+# Editor temporary/working/backup files #
+#########################################
+.#*
+[#]*#
+*~
+*$
+*.bak
+
+# Compiled source #
+###################
+*.a
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so.*
+
+# Things specific to this project #
+###################################
+config.log
+config.status
+makedefs
+utils/fitshdr
+wcsconfig.h
+wcsconfig_f77.h
+wcsconfig_tests.h
+wcsconfig_utils.h
+wcslib.pc
+C/fitshdr.c
+C/wcsbth.c
+C/wcspih.c
+C/wcsulex.c
+C/wcsutrn.c
+
