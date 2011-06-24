@@ -315,12 +315,30 @@
 #ifndef WCSLIB_WCSUNITS
 #define WCSLIB_WCSUNITS
 
+#include "wcserr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
 extern const char *wcsunits_errmsg[];
+
+enum wcsunits_errmsg_enum {
+  UNITSERR_SUCCESS            = 0,
+  UNITSERR_BAD_NUM_MULTIPLIER = 1,
+  UNITSERR_DANGLING_BINOP     = 2,
+  UNITSERR_BAD_INITIAL_SYMBOL = 3,
+  UNITSERR_FUNCTION_CONTEXT   = 4,
+  UNITSERR_BAD_EXPON_SYMBOL   = 5,
+  UNITSERR_UNBAL_BRACKET      = 6,
+  UNITSERR_UNBAL_PAREN        = 7,
+  UNITSERR_CONSEC_BINOPS      = 8,
+  UNITSERR_PARSER_ERROR       = 9,
+  UNITSERR_BAD_UNIT_SPEC      = 10,
+  UNITSERR_BAD_FUNCS          = 11,
+  UNITSERR_UNSAFE_TRANS       = 12
+};
 
 extern const char *wcsunits_types[];
 extern const char *wcsunits_units[];
@@ -346,13 +364,16 @@ extern const char *wcsunits_units[];
 #define WCSUNITS_NTYPE      17
 
 
+/* ERRTODO: Document me */
 int wcsunits(const char have[], const char want[], double *scale,
-             double *offset, double *power);
+             double *offset, double *power, struct wcserr *err);
 
-int wcsutrn(int ctrl, char unitstr[]);
+/* ERRTODO: Document me */
+int wcsutrn(int ctrl, char unitstr[], struct wcserr *err);
 
-int wcsulex(const char unitstr[], int *func, double *scale, double units[]);
-
+/* ERRTODO: Document me  */
+int wcsulex(const char unitstr[], int *func, double *scale, double units[],
+            struct wcserr *err);
 
 #ifdef __cplusplus
 }

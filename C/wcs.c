@@ -1467,7 +1467,11 @@ int wcsset(struct wcsprm *wcs)
           wcscel->ref[3] = wcs->pv[k].value;
           break;
         default:
-          return 6;
+          /* ERRTODO: Better message */
+          return WCSERR_SET(
+            &wcs->err, WCSERR_BAD_COORD_TRANS,
+            "PV%i_%i%s: Bad coordinate transformation parameter",
+            i+1, m, wcs->alt);
           break;
         }
       }
@@ -1483,7 +1487,10 @@ int wcsset(struct wcsprm *wcs)
     } else if (strncmp(wcs->ctype[wcs->lng]+5, "NCP", 3) == 0) {
       /* Convert NCP to SIN. */
       if (wcscel->ref[1] == 0.0) {
-        return 5;
+        /* ERRTODO: Better message */
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_PARAM,
+          "Invalid parameter value");
       }
 
       strcpy(wcsprj->code, "SIN");
@@ -1498,7 +1505,9 @@ int wcsset(struct wcsprm *wcs)
     /* Initialize the celestial transformation routines. */
     wcsprj->r0 = 0.0;
     if ((status = celset(wcscel))) {
-      return status + 3;
+      wcserr_copy(&wcs->err, &wcscel->err);
+      wcs->err.status += 3;
+      return wcs->err.status;
     }
 
     /* Update LONPOLE, LATPOLE, and PVi_ma keyvalues. */
@@ -1556,7 +1565,9 @@ int wcsset(struct wcsprm *wcs)
 
     /* Initialize the spectral transformation routines. */
     if ((status = spcset(wcsspc))) {
-      return status + 3;
+      wcserr_copy(&wcs->err, &wcsspc->err);
+      wcs->err.status += 3;
+      return wcs->err.status;
     }
   }
 
@@ -1564,7 +1575,9 @@ int wcsset(struct wcsprm *wcs)
   /* Tabular axes present? */
   for (j = 0; j < wcs->ntab; j++) {
     if ((status = tabset(wcs->tab + j))) {
-      return status + 3;
+      wcserr_copy(&wcs->err, &((wcs->tab + j)->err));
+      wcs->err.status += 3;
+      return wcs->err.status;
     }
   }
 
@@ -1590,7 +1603,11 @@ int wcsset(struct wcsprm *wcs)
       if ((i = wcs->lng) >= 0 && (j = wcs->lat) >= 0) {
         rho = wcs->crota[j];
 
-        if (wcs->cdelt[i] == 0.0) return 3;
+        if (wcs->cdelt[i] == 0.0) {
+          return WCSERR_SET(
+            &wcs->err, WCSERR_SINGULAR_MTX,
+            "Singular transformation matrix");
+        }
         lambda = wcs->cdelt[j]/wcs->cdelt[i];
 
         *(pc + i*naxis + i) = *(pc + j*naxis + j) = cosd(rho);
@@ -1605,7 +1622,7 @@ int wcsset(struct wcsprm *wcs)
   wcs->lin.pc     = wcs->pc;
   wcs->lin.cdelt  = wcs->cdelt;
   if ((status = linset(&(wcs->lin)))) {
-    return status;
+    return wcserr_copy(&wcs->err, &(wcs->lin.err));
   }
 
 
@@ -1897,10 +1914,14 @@ int wcs_units(struct wcsprm *wcs)
   char ctype[9], units[16];
   int  i, j, naxis;
   double scale, offset, power;
-
-  /* Initialize if required. */
+  struct wcserr uniterr;
+  
+  /* ERRTODO: No way to to set error message here because there's
+     nowhere to put it. */
   if (wcs == 0x0) return 1;
 
+  wcserr_ini(&uniterr);
+  
   naxis = wcs->naxis;
   for (i = 0; i < naxis; i++) {
     /* Use types set by wcs_types(). */
@@ -1928,8 +1949,10 @@ int wcs_units(struct wcsprm *wcs)
 
     wcsutil_null_fill(72, wcs->cunit[i]);
     if (wcs->cunit[i][0]) {
-      if (wcsunits(wcs->cunit[i], units, &scale, &offset, &power)) {
-        return 6;
+      if (wcsunits(wcs->cunit[i], units, &scale, &offset, &power, &uniterr)) {
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_COORD_TRANS,
+          "In CUNIT%d%s: %s", i, wcs->alt, uniterr.msg);
       }
 
       if (scale != 1.0) {

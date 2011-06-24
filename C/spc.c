@@ -84,6 +84,8 @@ int spcini(struct spcprm *spc)
 
   if (spc == 0x0) return 1;
 
+  wcserr_ini(&spc->err);
+  
   spc->flag = 0;
 
   strcpy(spc->type, "    ");

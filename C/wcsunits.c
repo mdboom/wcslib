@@ -84,29 +84,39 @@ const char *wcsunits_units[] = {
   "second",
   "", "", "", "", "", "", "", ""};
 
+const char *wcsunits_funcs[] = {
+  "none",
+  "log",
+  "ln",
+  "exp"};
+
 int wcsunits(
   const char have[],
   const char want[],
   double *scale,
   double *offset,
-  double *power)
+  double *power,
+  struct wcserr *err)
 
 {
   int    func1, func2, i, status;
   double scale1, scale2, units1[WCSUNITS_NTYPE], units2[WCSUNITS_NTYPE];
 
-  if ((status = wcsulex(have, &func1, &scale1, units1))) {
+  if ((status = wcsulex(have, &func1, &scale1, units1, err))) {
     return status;
   }
 
-  if ((status = wcsulex(want, &func2, &scale2, units2))) {
+  if ((status = wcsulex(want, &func2, &scale2, units2, err))) {
     return status;
   }
 
   /* Check conformance. */
   for (i = 0; i < WCSUNITS_NTYPE; i++) {
     if (units1[i] != units2[i]) {
-      return 10;
+      return WCSERR_SET(
+        err, UNITSERR_BAD_UNIT_SPEC,
+        "Mismatched units type '%s': have '%s', want '%s'",
+        wcsunits_types[i], have, want);
     }
   }
 
@@ -118,7 +128,7 @@ int wcsunits(
   case 0:
     /* No function. */
     if (func2) {
-      return 11;
+      goto fail_mismatched_function;
     }
 
     *scale = scale1 / scale2;
@@ -137,7 +147,7 @@ int wcsunits(
       *offset = log(scale1 / scale2);
 
     } else {
-      return 11;
+      goto fail_mismatched_function;
     }
 
     break;
@@ -155,7 +165,7 @@ int wcsunits(
       *offset = log(scale1 / scale2);
 
     } else {
-      return 11;
+      goto fail_mismatched_function;
     }
 
     break;
@@ -163,7 +173,7 @@ int wcsunits(
   case 3:
     /* exp(). */
     if (func2 != 3) {
-      return 11;
+      goto fail_mismatched_function;
     }
 
     *scale = 1.0;
@@ -172,8 +182,16 @@ int wcsunits(
 
   default:
     /* Internal parser error. */
-    return 9;
+    return WCSERR_SET(
+      err, UNITSERR_PARSER_ERROR,
+      "Internal units parser error");
   }
 
   return 0;
+
+ fail_mismatched_function:
+  return WCSERR_SET(
+    err, UNITSERR_BAD_FUNCS,
+    "Mismatched unit functions: have '%s' (%s), want '%s' (%s)",
+    have, wcsunits_funcs[func1], want, wcsunits_funcs[func2]);
 }

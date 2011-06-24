@@ -64,6 +64,10 @@ int wcserr_set(
 {
   va_list argp;
 
+  if (err == 0x0) {
+    return status;
+  }
+  
   err->status = status;
 
   va_start(argp, format);

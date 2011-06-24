@@ -66,6 +66,6 @@ int wcserr_set(
   ...);
 
 #define WCSERR_SET(err, status, format, ...) \
-  wcserr_set(err, status, __FILE__, __LINE__, format, ##__VA_ARGS__)
+  wcserr_set((err), (status), __FILE__, __LINE__, (format), ##__VA_ARGS__)
 
 #endif /* WSCLIB_WCSERR */

@@ -656,6 +656,7 @@
 #define WCSLIB_SPC
 
 #include "spx.h"
+#include "wcserr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -706,6 +707,10 @@ struct spcprm {
   int (*spxS2P)(SPX_ARGS);	/* Pointers to the transformation functions */
   int (*spxP2X)(SPX_ARGS);	/* in the two-step algorithm chain in the   */
 				/* spectral-to-pixel direction.             */
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the spcprm struct in int units, used by the Fortran wrappers. */

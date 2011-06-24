@@ -312,6 +312,7 @@
 #define WCSLIB_CEL
 
 #include "prj.h"
+#include "wcserr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -341,6 +342,10 @@ struct celprm {
   double euler[5];		/* Euler angles and functions thereof.      */
   int    latpreq;		/* LATPOLEa requirement.                    */
   int    isolat;		/* True if |latitude| is preserved.         */
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the celprm struct in int units, used by the Fortran wrappers. */

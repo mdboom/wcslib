@@ -299,7 +299,7 @@ int unitfix(int ctrl, struct wcsprm *wcs)
   if (wcs == 0x0) return 1;
 
   for (i = 0; i < wcs->naxis; i++) {
-    if (wcsutrn(ctrl, wcs->cunit[i]) == 0) status = 0;
+    if (wcsutrn(ctrl, wcs->cunit[i], &wcs->err) == 0) status = 0;
   }
 
   return status;

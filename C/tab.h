@@ -451,6 +451,8 @@
 #ifndef WCSLIB_TAB
 #define WCSLIB_TAB
 
+#include "wcserr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -499,6 +501,10 @@ struct tabprm {
   int    set_M;
   int    *m_K, *m_map;
   double *m_crval, **m_index, **m_indxs, *m_coord;
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the tabprm struct in int units, used by the Fortran wrappers. */

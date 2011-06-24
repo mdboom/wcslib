@@ -61,6 +61,8 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
   if (tab == 0x0) return 1;
 
+  wcserr_ini(&tab->err);
+  
   if (M <= 0) {
     return 3;
   }

@@ -63,6 +63,8 @@ struct celprm *cel;
 
   if (cel == 0x0) return 1;
 
+  wcserr_ini(&cel->err);
+  
   cel->flag = 0;
 
   cel->offset = 0;
