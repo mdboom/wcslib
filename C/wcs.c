@@ -1541,7 +1541,10 @@ int wcsset(struct wcsprm *wcs)
   /* Non-linear spectral axis present? */
   if (wcs->spec >= 0 && wcs->types[wcs->spec] == 3300) {
     spcini(wcsspc);
-    spctyp(wcs->ctype[wcs->spec], stype, scode, 0x0, 0x0, 0x0, 0x0, 0x0);
+    if ((status =
+         spctyp(wcs->ctype[wcs->spec], stype, scode, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err))) {
+      return status;
+    }
     strcpy(wcsspc->type, stype);
     strcpy(wcsspc->code, scode);
 
@@ -1755,10 +1758,14 @@ int wcs_types(struct wcsprm *wcs)
             wcs->cubeface, wcs->alt, i, wcs->alt);
         }
 
-      } else if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
-        /* Spectral axis. */
-        if (wcs->spec < 0) wcs->spec = i;
-        wcs->types[i] += 3000;
+      } else {
+        if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err) == 0) {
+          /* Spectral axis. */
+          if (wcs->spec < 0) wcs->spec = i;
+          wcs->types[i] += 3000;
+        } else {
+          wcserr_ini(&wcs->err); /* Ignore any errors */
+        }
       }
 
       continue;
@@ -1766,7 +1773,7 @@ int wcs_types(struct wcsprm *wcs)
 
 
     /* CTYPEia is in "4-3" form; is it a recognized spectral type? */
-    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
+    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err) == 0) {
       /* Non-linear spectral axis found. */
       wcs->types[i] = 3300;
 
@@ -1781,6 +1788,8 @@ int wcs_types(struct wcsprm *wcs)
       wcs->spec = i;
 
       continue;
+    } else {
+      wcserr_ini(&wcs->err); /* Ignore any errors */
     }
 
 
@@ -1935,7 +1944,8 @@ int wcs_units(struct wcsprm *wcs)
       /* Spectral axis. */
       strncpy(ctype, wcs->ctype[i], 8);
       ctype[8] = '\0';
-      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0);
+      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, &wcs->err);
+      wcserr_init(&wcs->err);
       break;
 
     default:
@@ -2140,7 +2150,7 @@ int wcsp2s(
       } else if (type == 4) {
         /* Logarithmic coordinates. */
         istat = logx2s(wcs->crval[i], nx, nelem, nelem, imgcrd+i, world+i,
-                       istatp);
+                       istatp, &wcs->err);
       }
 
       if (istat) {
@@ -2344,7 +2354,7 @@ int wcss2p(
       } else if (type == 4) {
         /* Logarithmic coordinates. */
         istat = logs2x(wcs->crval[i], nwrld, nelem, nelem, world+i,
-                       imgcrd+i, istatp);
+                       imgcrd+i, istatp, &wcs->err);
       }
 
       if (istat) {
@@ -3025,7 +3035,8 @@ int wcssptr(
 
   /* Translate the spectral axis. */
   if ((status = spctrn(wcs->ctype[j], wcs->crval[j], wcs->cdelt[j],
-                       wcs->restfrq, wcs->restwav, ctype, &crval, &cdelt))) {
+                       wcs->restfrq, wcs->restwav, ctype, &crval, &cdelt,
+                       &wcs->err))) {
     return 6;
   }
 
@@ -3034,7 +3045,8 @@ int wcssptr(
   wcs->flag = 0;
   wcs->cdelt[j] = cdelt;
   wcs->crval[j] = crval;
-  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0);
+  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0, &wcs->err);
+  wcserr_ini(&wcs->err);
   strcpy(wcs->ctype[j], ctype);
 
   /* This keeps things tidy if the spectral axis is linear. */

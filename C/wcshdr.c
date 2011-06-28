@@ -600,7 +600,9 @@ int wcshdo(int relax, struct wcsprm *wcs, int *nkeyrec, char **header)
       strcat(comment, " projection");
 
     } else if (i == wcs->spec) {
-      spctyp(wcs->ctype[i], 0x0, 0x0, comment, 0x0, &ptype, &xtype, 0x0);
+      spctyp(wcs->ctype[i], 0x0, 0x0, comment, 0x0, &ptype, &xtype, 0x0,
+             &wcs->err);
+      wcserr_ini(&wcs->err);
       if (ptype == xtype) {
         strcat(comment, " (linear)");
       } else {

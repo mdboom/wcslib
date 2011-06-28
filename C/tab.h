@@ -460,6 +460,14 @@ extern "C" {
 
 extern const char *tab_errmsg[];
 
+enum tab_errmsg_enum {
+  TABERR_SUCCESS      = 0,
+  TABERR_NULL_POINTER = 1,
+  TABERR_MEMORY       = 2,
+  TABERR_BAD_PARAMS   = 3,
+  TABERR_BAD_X        = 4,
+  TABERR_BAD_WORLD    = 5
+};
 
 struct tabprm {
   /* Initialization flag (see the prologue above).                          */

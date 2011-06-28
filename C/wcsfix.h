@@ -308,6 +308,7 @@
 #define WCSLIB_WCSFIX
 
 #include "wcs.h"
+#include "wcserr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -324,9 +325,27 @@ extern "C" {
 extern const char *wcsfix_errmsg[];
 #define cylfix_errmsg wcsfix_errmsg
 
+enum wcsfix_errmsg_enum {
+  FIXERR_NO_CHANGE        = -1,
+  FIXERR_SUCCESS          = 0,
+  FIXERR_NULL_POINTER     = 1,
+  FIXERR_MEMORY           = 2,
+  FIXERR_SINGULAR_MTX     = 3,
+  FIXERR_BAD_CTYPE        = 4,
+  FIXERR_BAD_PARAM        = 5,
+  FIXERR_BAD_COORD_TRANS  = 6,
+  FIXERR_ILL_COORD_TRANS  = 7,
+  FIXERR_BAD_CORNER_PIX   = 8,
+  FIXERR_BAD_WORLD_COORDS = 9,
+  FIXERR_NO_REF_PIX_COORD = 10,
+  FIXERR_NO_REF_PIX_VAL   = 11,
+};
 
 int wcsfix(int ctrl, const int naxis[], struct wcsprm *wcs, int stat[]);
 
+int wcsfix_detailed(int ctrl, const int naxis[], struct wcsprm *wcs,
+                    int stat[], struct wcserr info[]);
+  
 int cdfix(struct wcsprm *wcs);
 
 int datfix(struct wcsprm *wcs);

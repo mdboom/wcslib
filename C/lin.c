@@ -47,6 +47,8 @@ const char *lin_errmsg[] = {
   "Memory allocation failed",
   "PCi_ja matrix is singular"};
 
+static int matinv_err(
+  int n, const double mat[], double inv[], struct wcserr *err);
 
 /*--------------------------------------------------------------------------*/
 
@@ -61,7 +63,7 @@ struct linprm *lin;
 
   /* ERRTODO: No way to to set error message here because there's
      nowhere to put it. */
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
 
   /* Initialize the error structure first, so we can start returning
      errors. */
@@ -202,11 +204,13 @@ struct linprm *lindst;
   const double *srcp;
   double *dstp;
 
-  if (linsrc == 0x0) return 1;
+  if (linsrc == 0x0) return LINERR_NULL_POINTER;
 
   naxis = linsrc->naxis;
   if (naxis <= 0) {
-    return 2;
+    return WCSERR_SET(
+      &lindst->err, LINERR_MEMORY,
+      "naxis must be positive (got %d)", naxis);
   }
 
   if ((status = linini(alloc, naxis, lindst))) {
@@ -243,7 +247,7 @@ int linfree(lin)
 struct linprm *lin;
 
 {
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
 
   if (lin->flag != -1) {
     /* Free memory allocated by linini(). */
@@ -289,7 +293,7 @@ const struct linprm *lin;
 {
   int i, j, k;
 
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
 
   if (lin->flag != LINSET) {
     wcsprintf("The linprm struct is UNINITIALIZED.\n");
@@ -375,7 +379,7 @@ struct linprm *lin;
   int i, j, n, status;
   double *pc, *piximg;
 
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
 
   n = lin->naxis;
 
@@ -420,12 +424,12 @@ struct linprm *lin;
 
       /* Allocate memory for internal arrays. */
       if (!(lin->piximg = calloc(n*n, sizeof(double)))) {
-        return 2;
+        return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
       }
 
       if (!(lin->imgpix = calloc(n*n, sizeof(double)))) {
         free(lin->piximg);
-        return 2;
+        return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
       }
 
       lin->i_naxis = n;
@@ -441,7 +445,7 @@ struct linprm *lin;
     }
 
     /* Compute the image-to-pixel transformation matrix. */
-    if ((status = matinv(n, lin->piximg, lin->imgpix))) {
+    if ((status = matinv_err(n, lin->piximg, lin->imgpix, &lin->err))) {
       return status;
     }
   }
@@ -469,7 +473,7 @@ double imgcrd[];
 
 
   /* Initialize. */
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
   if (lin->flag != LINSET) {
     if ((status = linset(lin))) return status;
   }
@@ -531,7 +535,7 @@ double pixcrd[];
 
 
   /* Initialize. */
-  if (lin == 0x0) return 1;
+  if (lin == 0x0) return LINERR_NULL_POINTER;
   if (lin->flag != LINSET) {
     if ((status = linset(lin))) return status;
   }
@@ -577,11 +581,8 @@ double pixcrd[];
 
 /*--------------------------------------------------------------------------*/
 
-int matinv(n, mat, inv)
-
-int n;
-const double mat[];
-double inv[];
+static int matinv_err(int n, const double mat[], double inv[],
+                      struct wcserr *err)
 
 {
   register int i, ij, ik, j, k, kj, pj;
@@ -590,23 +591,25 @@ double inv[];
 
 
   /* Allocate memory for internal arrays. */
-  if (!(mxl = calloc(n, sizeof(int)))) return 2;
+  if (!(mxl = calloc(n, sizeof(int)))) {
+    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+  }
   if (!(lxm = calloc(n, sizeof(int)))) {
     free(mxl);
-    return 2;
+    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
   }
 
   if (!(rowmax = calloc(n, sizeof(double)))) {
     free(mxl);
     free(lxm);
-    return 2;
+    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
   }
 
   if (!(lu = calloc(n*n, sizeof(double)))) {
     free(mxl);
     free(lxm);
     free(rowmax);
-    return 2;
+    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
   }
 
 
@@ -630,7 +633,7 @@ double inv[];
       free(lxm);
       free(rowmax);
       free(lu);
-      return 3;
+      return WCSERR_SET(err, LINERR_SINGULAR_MTX, lin_errmsg[LINERR_SINGULAR_MTX]);
     }
   }
 
@@ -727,3 +730,14 @@ double inv[];
 
    return 0;
 }
+
+int matinv(n, mat, inv)
+
+int n;
+const double mat[];
+double inv[];
+
+{
+  return matinv_err(n, mat, inv, NULL);
+}
+

@@ -59,12 +59,14 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
   int k, m, N;
   double *dp;
 
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
 
   wcserr_ini(&tab->err);
   
   if (M <= 0) {
-    return 3;
+    return WCSERR_SET(
+      &tab->err, TABERR_MEMORY,
+      "M must be positive, got %d", M);         
   }
 
   /* Determine the total number of elements in the coordinate array. */
@@ -73,7 +75,10 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
     for (m = 0; m < M; m++) {
       if (K[m] < 0) {
-        return 3;
+        return WCSERR_SET(
+          &tab->err, TABERR_BAD_PARAMS,
+          "Invalid tabular parameters: Each element of K must be non-negative, got %d",
+          K[m]);         
       }
 
       N *= K[m];
@@ -136,7 +141,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
       } else {
         if (!(tab->K = calloc(M, sizeof(int)))) {
-          return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         tab->m_flag = TABSET;
@@ -152,7 +157,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
       } else {
         if (!(tab->map = calloc(M, sizeof(int)))) {
-          return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         tab->m_flag = TABSET;
@@ -168,7 +173,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
       } else {
         if (!(tab->crval = calloc(M, sizeof(double)))) {
-          return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         tab->m_flag = TABSET;
@@ -184,7 +189,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
       } else {
         if (!(tab->index = calloc(M, sizeof(double *)))) {
-          return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         tab->m_flag = TABSET;
@@ -193,7 +198,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
         tab->m_index = tab->index;
 
         if (!(tab->m_indxs = calloc(M, sizeof(double *)))) {
-           return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         /* Recall that calloc() initializes these pointers to zero. */
@@ -201,7 +206,8 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
           for (m = 0; m < M; m++) {
             if (K[m]) {
               if (!(tab->index[m] = calloc(K[m], sizeof(double)))) {
-                return 2;
+                return WCSERR_SET(
+                  &tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
               }
 
               tab->m_indxs[m] = tab->index[m];
@@ -218,7 +224,7 @@ int tabini(int alloc, int M, const int K[], struct tabprm *tab)
 
       } else if (N) {
         if (!(tab->coord = calloc(N, sizeof(double)))) {
-          return 2;
+          return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
         }
 
         tab->m_flag = TABSET;
@@ -268,14 +274,16 @@ int tabmem(struct tabprm *tab)
 
   if (tab->M == 0 || tab->K == 0x0) {
     /* Should have been set by this time. */
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "Null pointers in tabprm struct");
   }
 
 
   N = M = tab->M;
   for (m = 0; m < M; m++) {
     if (tab->K[m] < 0) {
-      return 3;
+      return WCSERR_SET(
+        &tab->err, TABERR_BAD_PARAMS,
+        "Invalid tabular parameters: Each element of K must be non-negative, got %d", M);         
     }
 
     N *= tab->K[m];
@@ -286,14 +294,14 @@ int tabmem(struct tabprm *tab)
     tab->m_M = M;
   } else if (tab->m_M < M) {
     /* Only possible if the user changed M. */
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "tabprm struct inconsistent");
   }
 
   if (tab->m_N == 0) {
     tab->m_N = N;
   } else if (tab->m_N < N) {
     /* Only possible if the user changed K[]. */
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "tabprm struct inconsistent");
   }
 
   if (tab->m_K == 0x0) {
@@ -347,11 +355,13 @@ int tabcpy(int alloc, const struct tabprm *tabsrc, struct tabprm *tabdst)
   int k, m, M, n, N, status;
   double *dstp, *srcp;
 
-  if (tabsrc == 0x0) return 1;
+  if (tabsrc == 0x0) return TABERR_NULL_POINTER;
 
   M = tabsrc->M;
   if (M <= 0) {
-    return 2;
+    return WCSERR_SET(
+      &tabdst->err, TABERR_MEMORY,
+      "M must be positive, got %d", M);         
   }
 
   if ((status = tabini(alloc, M, tabsrc->K, tabdst))) {
@@ -390,7 +400,7 @@ int tabfree(struct tabprm *tab)
 {
   int m;
 
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
 
   if (tab->flag != -1) {
     /* Clear any outstanding signals set by wcstab(). */
@@ -460,7 +470,7 @@ int tabprt(const struct tabprm *tab)
   int    j, k, m, n, nd;
   double *dp;
 
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
 
   if (tab->flag != TABSET) {
     wcsprintf("The tabprm struct is UNINITIALIZED.\n");
@@ -628,22 +638,27 @@ int tabset(struct tabprm *tab)
   int i, ic, k, *Km, m, M, ne;
   double *dcrd, *dmax, *dmin, dPsi, dval, *Psi;
 
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
 
   /* Check the number of tabular coordinate axes. */
   if ((M = tab->M) < 1) {
-    return 3;
+    return WCSERR_SET(
+      &tab->err, TABERR_BAD_PARAMS,
+      "Invalid tabular parameters: M must be positive, got %d", M);         
   }
 
   /* Check the axis lengths. */
   if (!tab->K) {
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "Null pointers in tabprm struct");
   }
 
   tab->nc = 1;
   for (m = 0; m < M; m++) {
     if (tab->K[m] < 1) {
-      return 3;
+      return WCSERR_SET(
+        &tab->err, TABERR_BAD_PARAMS,
+        "Invalid tabular parameters: Each element of K must be positive, got %d",
+        tab->K[m]);         
     }
 
     /* Number of coordinate vectors in the coordinate array. */
@@ -652,19 +667,22 @@ int tabset(struct tabprm *tab)
 
   /* Check that the map vector is sensible. */
   if (!tab->map) {
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "Null pointers in tabprm struct");
   }
 
   for (m = 0; m < M; m++) {
     i = tab->map[m];
     if (i < 0) {
-      return 3;
+      return WCSERR_SET(
+        &tab->err, TABERR_BAD_PARAMS,
+        "Invalid tabular parameters: Each element of map must be non-negative, got %d",
+        i);         
     }
   }
 
   /* Check memory allocation for the remaining vectors. */
   if (!tab->crval || !tab->index || !tab->coord) {
-    return 2;
+    return WCSERR_SET(&tab->err, TABERR_MEMORY, "Null pointers in tabprm struct");
   }
 
   /* Take memory if signalled to by wcstab(). */
@@ -691,18 +709,18 @@ int tabset(struct tabprm *tab)
 
     /* Allocate memory for internal arrays. */
     if (!(tab->sense = calloc(M, sizeof(int)))) {
-      return 2;
+      return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
     }
 
     if (!(tab->p0 = calloc(M, sizeof(int)))) {
       free(tab->sense);
-      return 2;
+      return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
     }
 
     if (!(tab->delta = calloc(M, sizeof(double)))) {
       free(tab->sense);
       free(tab->p0);
-      return 2;
+      return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
     }
 
     ne = M * tab->nc * 2 / tab->K[0];
@@ -710,7 +728,7 @@ int tabset(struct tabprm *tab)
       free(tab->sense);
       free(tab->p0);
       free(tab->delta);
-      return 2;
+      return WCSERR_SET(&tab->err, TABERR_MEMORY, tab_errmsg[TABERR_MEMORY]);
     }
 
     tab->set_M = M;
@@ -746,7 +764,9 @@ int tabset(struct tabprm *tab)
               free(tab->p0);
               free(tab->delta);
               free(tab->extrema);
-              return 3;
+              return WCSERR_SET(
+                &tab->err, TABERR_BAD_PARAMS,
+                "Invalid tabular parameters: Index vectors are not monotonically increasing");
             }
             break;
 
@@ -757,7 +777,9 @@ int tabset(struct tabprm *tab)
               free(tab->p0);
               free(tab->delta);
               free(tab->extrema);
-              return 3;
+              return WCSERR_SET(
+                &tab->err, TABERR_BAD_PARAMS,
+                "Invalid tabular parameters: Index vectors are not monotonically decreasing");
             }
             break;
           }
@@ -769,7 +791,9 @@ int tabset(struct tabprm *tab)
         free(tab->p0);
         free(tab->delta);
         free(tab->extrema);
-        return 3;
+        return WCSERR_SET(
+          &tab->err, TABERR_BAD_PARAMS,
+          "Invalid tabular parameters: Index vectors are not monotonic");
       }
     }
   }
@@ -853,7 +877,7 @@ int tabx2s(
   register double *wp;
 
   /* Initialize if required. */
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
   if (tab->flag != TABSET) {
     if ((status = tabset(tab))) return status;
   }
@@ -889,7 +913,7 @@ int tabx2s(
             upsilon = psi_m;
           } else {
             *statp = 1;
-            status = 4;
+            status = TABERR_BAD_X;
             goto next;
           }
 
@@ -905,7 +929,7 @@ int tabx2s(
               } else {
                 /* Index is out of range. */
                 *statp = 1;
-                status = 4;
+                status = TABERR_BAD_X;
                 goto next;
               }
 
@@ -917,7 +941,7 @@ int tabx2s(
               } else {
                 /* Index is out of range. */
                 *statp = 1;
-                status = 4;
+                status = TABERR_BAD_X;
                 goto next;
               }
 
@@ -945,7 +969,7 @@ int tabx2s(
               } else {
                 /* Index is out of range. */
                 *statp = 1;
-                status = 4;
+                status = TABERR_BAD_X;
                 goto next;
               }
 
@@ -957,7 +981,7 @@ int tabx2s(
               } else {
                 /* Index is out of range. */
                 *statp = 1;
-                status = 4;
+                status = TABERR_BAD_X;
                 goto next;
               }
 
@@ -983,7 +1007,7 @@ int tabx2s(
       if (upsilon < 0.5 || upsilon > *Km + 0.5) {
         /* Index out of range. */
         *statp = 1;
-        status = 4;
+        status = TABERR_BAD_X;
         goto next;
       }
 
@@ -1047,6 +1071,9 @@ next:
     statp++;
   }
 
+  if (status == TABERR_BAD_X) {
+    WCSERR_SET(&tab->err, status, tab_errmsg[status]);
+  }
   return status;
 }
 
@@ -1072,7 +1099,7 @@ int tabs2x(
   register double *xp;
 
   /* Initialize if required. */
-  if (tab == 0x0) return 1;
+  if (tab == 0x0) return TABERR_NULL_POINTER;
   if (tab->flag != TABSET) {
     if ((status = tabset(tab))) return status;
   }
@@ -1196,7 +1223,7 @@ int tabs2x(
     if (ic == tab->nc) {
       /* Coordinate not found. */
       *statp = 1;
-      status = 5;
+      status = TABERR_BAD_WORLD;
     } else {
       /* Determine the intermediate world coordinates. */
       Km = tab->K;
@@ -1207,7 +1234,7 @@ int tabs2x(
         if (upsilon < 0.5 || upsilon > *Km + 0.5) {
           /* Index out of range. */
           *statp = 1;
-          status = 5;
+          status = TABERR_BAD_WORLD;
 
         } else {
           /* Do inverse lookup of the index vector. */
@@ -1247,6 +1274,9 @@ int tabs2x(
 
   if (M > 1) free(tabcoord);
 
+  if (status == TABERR_BAD_WORLD) {
+    WCSERR_SET(&tab->err, TABERR_BAD_WORLD, tab_errmsg[TABERR_BAD_WORLD]);
+  }
   return status;
 }
 

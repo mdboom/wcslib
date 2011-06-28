@@ -90,7 +90,8 @@
 *   stat      int[]     Status return value status for each vector element:
 *                         0: Success.
 *                         1: Invalid value of x.
-*
+* ERRTODO: Document error parameter
+*                         
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -113,7 +114,8 @@
 *   sx        int       Vector stride.
 *   logc      const double[]
 *                       Logarithmic coordinates, in SI units.
-*
+* ERRTODO: Document error parameter
+*                       
 * Returned:
 *   x         double[]  Intermediate world coordinates, in SI units.
 *   stat      int[]     Status return value status for each vector element:
@@ -124,6 +126,8 @@
 *             int       Status return value:
 *                         0: Success.
 *                         2: Invalid log-coordinate reference value.
+*                         4: One or more of the world-coordinate values
+*                            are incorrect, as indicated by the stat vector.
 *
 *
 * Global variable: const char *log_errmsg[] - Status return messages
@@ -139,15 +143,23 @@
 extern "C" {
 #endif
 
+#include "wcserr.h"
 
 extern const char *log_errmsg[];
 
-
+enum log_errmsg_enum {
+  LOGERR_SUCCESS = 0,
+  LOGERR_NULL_POINTER = 1,
+  LOGERR_BAD_LOG_REF_VAL = 2,
+  LOGERR_BAD_X_VAL = 3,
+  LOGERR_BAD_WORLD_VAL = 4
+};
+  
 int logx2s(double crval, int nx, int sx, int slogc, const double x[],
-           double logc[], int stat[]);
+           double logc[], int stat[], struct wcserr *err);
 
 int logs2x(double crval, int nlogc, int slogc, int sx, const double logc[],
-           double x[], int stat[]);
+           double x[], int stat[], struct wcserr *err);
 
 
 #ifdef __cplusplus

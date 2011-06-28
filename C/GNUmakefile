@@ -299,11 +299,11 @@ $(WCSLIB)(cel.o)      : cel.h prj.h sph.h wcserr.h wcsmath.h wcsprintf.h \
 	                wcstrig.h
 $(WCSLIB)(fitshdr.o)  : wcsconfig.h fitshdr.h
 $(WCSLIB)(lin.o)      : lin.h wcserr.h wcsprintf.h
-$(WCSLIB)(log.o)      : log.h
+$(WCSLIB)(log.o)      : log.h wcserr.h
 $(WCSLIB)(prj.o)      : prj.h wcserr.h wcsmath.h wcsprintf.h wcstrig.h
 $(WCSLIB)(spc.o)      : spc.h spx.h wcserr.h wcsmath.h wcsprintf.h wcstrig.h
 $(WCSLIB)(sph.o)      : sph.h wcstrig.h
-$(WCSLIB)(spx.o)      : spx.h
+$(WCSLIB)(spx.o)      : spx.h wcserr.h
 $(WCSLIB)(tab.o)      : tab.h wcserr.h wcsmath.h wcsprintf.h
 $(WCSLIB)(wcs.o)      : cel.h lin.h log.h prj.h spc.h sph.h spx.h tab.h \
                         wcs.h wcserr.h wcsmath.h wcstrig.h wcsprintf.h \
@@ -311,7 +311,7 @@ $(WCSLIB)(wcs.o)      : cel.h lin.h log.h prj.h spc.h sph.h spx.h tab.h \
 $(WCSLIB)(wcsbth.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcshdr.h \
                         wcsmath.h
 $(WCSLIB)(wcsfix.o)   : cel.h lin.h prj.h spc.h sph.h spx.h tab.h wcs.h \
-                        wcsfix.h wcsmath.h wcsunits.h
+                        wcserr.h wcsfix.h wcsmath.h wcsunits.h
 $(WCSLIB)(wcshdr.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcshdr.h \
                         wcsutil.h
 $(WCSLIB)(wcspih.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcshdr.h \

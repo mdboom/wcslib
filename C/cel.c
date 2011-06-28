@@ -61,7 +61,7 @@ struct celprm *cel;
 {
   register int k;
 
-  if (cel == 0x0) return 1;
+  if (cel == 0x0) return CELERR_NULL_POINTER;
 
   wcserr_ini(&cel->err);
   
@@ -90,7 +90,7 @@ const struct celprm *cel;
 {
   int i;
 
-  if (cel == 0x0) return 1;
+  if (cel == 0x0) return CELERR_NULL_POINTER;
 
   wcsprintf("      flag: %d\n",  cel->flag);
   wcsprintf("     offset: %d\n",  cel->offset);
@@ -151,7 +151,7 @@ struct celprm *cel;
 
   /* ERRTODO: No way to to set error message here because there's
      nowhere to put it. */
-  if (cel == 0x0) return 1;
+  if (cel == 0x0) return CELERR_NULL_POINTER;
 
   /* Initialize the projection driver routines. */
   celprj = &(cel->prj);
@@ -165,7 +165,7 @@ struct celprm *cel;
   }
 
   if ((status = prjset(celprj))) {
-    return wcserr_copy(&cel->err, &prj->err);
+    return wcserr_copy(&cel->err, &celprj->err);
   }
 
   /* Defaults set by the projection routines. */
@@ -178,10 +178,9 @@ struct celprm *cel;
 
   } else if (fabs(cel->theta0) > 90.0) {
     if (fabs(cel->theta0) > 90.0 + tol) {
-      /* ERRTODO: Better message */
       return WCSERR_SET(
         &cel->err, CELERR_BAD_COORD_TRANS,
-        "Invalid coordinate transformation parameter: theta0 > 90");
+        "Invalid coordinate transformation parameters: theta0 > 90");
     }
 
     if (cel->theta0 > 90.0) {
@@ -239,10 +238,10 @@ struct celprm *cel;
       z = sqrt(x*x + y*y);
       if (z == 0.0) {
         if (slat0 != 0.0) {
-          /* ERRTODO: Better message */
+          /* ERRTODO: Better error message */
           return WCSERR_SET(
             &cel->err, CELERR_BAD_COORD_TRANS,
-            "Invalid coordinate transformation parameter");
+            "Invalid coordinate transformation parameters");
         }
 
         /* latp determined solely by LATPOLEa in this case. */
@@ -266,7 +265,7 @@ struct celprm *cel;
             /* ERRTODO: Better message */
             return WCSERR_SET(
               &cel->err, CELERR_BAD_COORD_TRANS,
-              "Invalid coordinate transformation parameter");
+              "Invalid coordinate transformation parameters");
           }
         }
 
@@ -342,7 +341,7 @@ struct celprm *cel;
         /* ERRTODO: Better message */
         return WCSERR_SET(
           &cel->err, CELERR_BAD_COORD_TRANS,
-          "Invalid coordinate transformation parameter");
+          "Invalid coordinate transformation parameters");
       }
       lngp = lng0 - atan2d(y,x);
     }
@@ -403,7 +402,7 @@ int stat[];
 
 
   /* Initialize. */
-  if (cel == 0x0) return 1;
+  if (cel == 0x0) return CELERR_NULL_POINTER;
   if (cel->flag != CELSET) {
     if ((status = celset(cel))) return status;
   }
@@ -412,8 +411,9 @@ int stat[];
   celprj = &(cel->prj);
   if ((status = celprj->prjx2s(celprj, nx, ny, sxy, 1, x, y, phi, theta,
                                stat))) {
-    if (status == 3) {
-      status = 5;
+    wcserr_copy(&cel->err, &cel->prj.err);
+    if (status == PRJERR_BAD_PIX) {
+      status = cel->err.status = CELERR_BAD_PIX;
     } else {
       return status;
     }
@@ -444,7 +444,7 @@ int stat[];
 
 
   /* Initialize. */
-  if (cel == 0x0) return 1;
+  if (cel == 0x0) return CELERR_NULL_POINTER;
   if (cel->flag != CELSET) {
     if ((status = celset(cel))) return status;
   }
@@ -465,8 +465,12 @@ int stat[];
   celprj = &(cel->prj);
   if ((status = celprj->prjs2x(celprj, nphi, ntheta, 1, sxy, phi, theta, x,
                                y, stat))) {
-    return status == 2 ? 2 : 6;
-   }
+    wcserr_copy(&cel->err, &cel->prj.err);
+    if (status != PRJERR_BAD_PARAM) {
+      status = cel->err.status = CELERR_BAD_WORLD;
+    }
+    return status;
+  }
 
-   return 0;
+  return 0;
 }

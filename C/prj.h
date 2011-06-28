@@ -504,11 +504,11 @@ extern "C" {
 extern const char *prj_errmsg[];
 
 enum prj_errmsg_enum {
-  PRJERR_SUCCESS          = 0,
-  PRJERR_NULL_POINTER     = 1,
-  PRJERR_BAD_PARAM        = 2,
-  PRJERR_BAD_PIX_COORDS   = 3,
-  PRJERR_BAD_WORLD_COORDS = 4
+  PRJERR_SUCCESS      = 0,
+  PRJERR_NULL_POINTER = 1,
+  PRJERR_BAD_PARAM    = 2,
+  PRJERR_BAD_PIX      = 3,
+  PRJERR_BAD_WORLD    = 4
 };
   
 extern const int CONIC, CONVENTIONAL, CYLINDRICAL, POLYCONIC,

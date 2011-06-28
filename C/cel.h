@@ -322,13 +322,13 @@ extern "C" {
 extern const char *cel_errmsg[];
 
 enum cel_errmsg_enum {
-  CELERR_SUCCESS          = 0,
-  CELERR_NULL_POINTER     = 1,
-  CELERR_BAD_PARAM        = 2,
-  CELERR_BAD_COORD_TRANS  = 3,
-  CELERR_ILL_COORD_TRANS  = 4,
-  CELERR_BAD_PIX_COORDS   = 5,
-  CELERR_BAD_WORLD_COORDS = 6,
+  CELERR_SUCCESS         = 0,
+  CELERR_NULL_POINTER    = 1,
+  CELERR_BAD_PARAM       = 2,
+  CELERR_BAD_COORD_TRANS = 3,
+  CELERR_ILL_COORD_TRANS = 4,
+  CELERR_BAD_PIX         = 5,
+  CELERR_BAD_WORLD       = 6
 };
 
 struct celprm {

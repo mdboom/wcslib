@@ -388,7 +388,9 @@
 *                       point, SI units.  Multiply the CDELTia keyvalue by
 *                       this to get the pixel spacing in the X-type spectral
 *                       coordinate.
-*
+*   ERRTODO: Document err parameter
+*                       
+*                       
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -439,7 +441,9 @@
 *                       point, SI units.  Multiply this by the pixel spacing
 *                       in the X-type spectral coordinate to get the CDELTia
 *                       keyvalue.
-*
+*   ERRTODO: Document error parameter
+* 
+*                       
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -665,6 +669,13 @@ extern "C" {
 
 extern const char *spc_errmsg[];
 
+enum spc_errmsg_enum {
+  SPCERR_SUCCESS = 0,
+  SPCERR_NULL_POINTER = 1,
+  SPCERR_BAD_SPEC_PARAMS = 2,
+  SPCERR_BAD_X_VAL = 3,
+  SPCERR_BAD_SPEC_VAL = 4
+};
 
 struct spcprm {
   /* Initialization flag (see the prologue above).                          */
@@ -730,19 +741,20 @@ int spcs2x(struct spcprm *spc, int nspec, int sspec, int sx,
            const double spec[], double x[], int stat[]);
 
 int spctyp(const char ctype[], char stype[], char scode[], char sname[],
-           char units[], char *ptype, char *xtype, int *restreq);
+           char units[], char *ptype, char *xtype, int *restreq,
+           struct wcserr *err);
 
 int spcspx(const char ctypeS[], double crvalS, double restfrq, double restwav,
            char *ptype, char *xtype, int *restreq, double *crvalX,
-           double *dXdS);
+           double *dXdS, struct wcserr *err);
 
 int spcxps(const char ctypeS[], double crvalX, double restfrq, double restwav,
            char *ptype, char *xtype, int *restreq, double *crvalS,
-           double *dSdX);
+           double *dSdX, struct wcserr *err);
 
 int spctrn(const char ctypeS1[], double crvalS1, double cdeltS1,
            double restfrq, double restwav, char ctypeS2[], double *crvalS2,
-           double *cdeltS2);
+           double *cdeltS2, struct wcserr *err);
 
 int spcaips(const char ctypeA[], int velref, char ctype[], char specsys[]);
 

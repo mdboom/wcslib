@@ -401,11 +401,20 @@
 
 #ifdef __cplusplus
 extern "C" {
+  
 #endif
 
-
+#include "wcserr.h"
+  
 extern const char *spx_errmsg[];
 
+enum spx_errmsg {
+  SPXERR_SUCCESS          = 0,
+  SPXERR_NULL_POINTER     = 1,
+  SPXERR_BAD_SPEC_PARAMS  = 2,
+  SPXERR_BAD_SPEC_VAR     = 3,
+  SPXERR_BAD_INSPEC_COORD = 4
+};
 
 struct spxprm {
   double restfrq, restwav;	/* Rest frequency [Hz] and wavelength [m].  */
@@ -442,6 +451,10 @@ struct spxprm {
          dwavevelo, dvelowave,	/* wavetype && velotype.                    */
          dawavvelo, dveloawav,	/* wavetype && velotype.                    */
          dvelobeta, dbetavelo;	/* Constant, always available.              */
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the spxprm struct in int units, used by the Fortran wrappers. */
@@ -454,7 +467,8 @@ int specx(const char *type, double spec, double restfrq, double restwav,
 
 /* For use in declaring function prototypes, e.g. in spcprm. */
 #define SPX_ARGS double param, int nspec, int instep, int outstep, \
-                 const double inspec[], double outspec[], int stat[]
+    const double inspec[], double outspec[], int stat[], \
+    struct wcserr *err                                   \
 
 int freqafrq(SPX_ARGS);
 int afrqfreq(SPX_ARGS);

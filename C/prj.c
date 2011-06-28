@@ -100,14 +100,19 @@ const char *prj_errmsg[] = {
   "One or more of the (x,y) coordinates were invalid",
   "One or more of the (phi,theta) coordinates were invalid"};
 
-#define PRJERR_BAD_PARAM_SET(errm, prjname)                             \
-  WCSERR_SET((err), PRJERR_BAD_PARAM, "Invalid parameters for %s projection", (prjname));
+#define PRJERR_BAD_PARAM_SET(prj)                             \
+  WCSERR_SET(&(prj)->err, PRJERR_BAD_PARAM,                   \
+             "Invalid parameters for %s projection", (prj)->name);
 
-#define PRJERR_BAD_PIX_SET(errm, prjname)                             \
-  WCSERR_SET((err), PRJERR_BAD_PIX_COORDS, "One or more of the (x, y) coordinates were invalid for %s projection", (prjname));
+#define PRJERR_BAD_PIX_SET(prj)                               \
+  WCSERR_SET(&(prj)->err, PRJERR_BAD_PIX,                     \
+             "One or more of the (x, y) coordinates were invalid for %s projection", \
+             (prj)->name);
 
-#define PRJERR_BAD_WORLD_SET(errm, prjname)                             \
-  WCSERR_SET((err), PRJERR_BAD_WORLD_COORDS, "One or more of the (lat, lng) coordinates were invalid for %s projection", (prjname));
+#define PRJERR_BAD_WORLD_SET(prj)                             \
+  WCSERR_SET(&(prj)->err, PRJERR_BAD_WORLD,                   \
+             "One or more of the (lat, lng) coordinates were invalid for %s projection", \
+             (prj)->name);
 
 #define copysign(X, Y) ((Y) < 0.0 ? -fabs(X) : fabs(X))
 
@@ -137,7 +142,7 @@ struct prjprm *prj;
 {
   register int k;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   wcserr_ini(&prj->err);
 
@@ -181,7 +186,7 @@ const struct prjprm *prj;
 {
   int i, n;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   wcsprintf("       flag: %d\n",  prj->flag);
   wcsprintf("       code: \"%s\"\n",  prj->code);
@@ -262,7 +267,7 @@ struct prjprm *prj;
 {
   int status;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   /* Invoke the relevant initialization routine. */
   prj->code[3] = '\0';
@@ -341,10 +346,12 @@ double phi[], theta[];
 int stat[];
 
 {
+  int status;
+  
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag == 0) {
-    if (prjset(prj)) return 2;
+    if (status = prjset(prj)) return status;
   }
 
   return prj->prjx2s(prj, nx, ny, sxy, spt, x, y, phi, theta, stat);
@@ -361,10 +368,12 @@ double x[], y[];
 int stat[];
 
 {
+  int status;
+  
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag == 0) {
-    if (prjset(prj)) return 2;
+    if (status = prjset(prj)) return status;
   }
 
   return prj->prjs2x(prj, nphi, ntheta, spt, sxy, phi, theta, x, y, stat);
@@ -384,7 +393,7 @@ const double phi0, theta0;
   int    stat;
   double x0, y0;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->x0 = 0.0;
   prj->y0 = 0.0;
@@ -397,7 +406,7 @@ const double phi0, theta0;
   } else {
     if (prj->prjs2x(prj, 1, 1, 1, 1, &(prj->phi0), &(prj->theta0), &x0, &y0,
                     &stat)) {
-      return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     prj->x0 = x0;
@@ -441,7 +450,7 @@ int azpset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = AZP;
   strcpy(prj->code, "AZP");
@@ -461,12 +470,12 @@ struct prjprm *prj;
 
   prj->w[0] = prj->r0*(prj->pv[1] + 1.0);
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[3] = cosd(prj->pv[2]);
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[2] = 1.0/prj->w[3];
@@ -505,12 +514,12 @@ int stat[];
   register int ix, iy, *statp;
   register const double *xp, *yp;
   register double *phip, *thetap;
-
+  
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AZP) {
-    if (azpset(prj)) return 2;
+    if (status = azpset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -574,7 +583,7 @@ int stat[];
           if (fabs(t) > 1.0+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status PRJERR_BAD_PIX_SET(&prj->err, prj->name);
+            status = PRJERR_BAD_PIX;
             continue;
           }
           t = copysign(90.0, t);
@@ -594,6 +603,10 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
+  
   return status;
 }
 
@@ -616,9 +629,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AZP) {
-    if (azpset(prj)) return PRJERR_BAD_PARAM;
+    if (status = azpset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -667,7 +680,7 @@ int stat[];
         *xp = 0.0;
         *yp = 0.0;
         *(statp++) = 1;
-        status = 4;
+        status = PRJERR_BAD_WORLD;
 
       } else {
         r = prj->w[0]*costhe/t;
@@ -678,7 +691,7 @@ int stat[];
           if (*thetap < prj->w[5]) {
             /* Overlap. */
             istat  = 1;
-            status = PRJERR_BAD_WORLD_SET(&prj->err, prj->name);
+            status = PRJERR_BAD_WORLD;
 
           } else if (prj->w[7] > 0.0) {
             /* Divergence. */
@@ -695,7 +708,7 @@ int stat[];
 
               if (*thetap < ((a > b) ? a : b)) {
                 istat  = 1;
-                status = PRJERR_BAD_WORLD_SET(&prj->err, prj->name);
+                status = PRJERR_BAD_WORLD;
               }
             }
           }
@@ -706,6 +719,10 @@ int stat[];
         *(statp++) = istat;
       }
     }
+  }
+
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
   }
 
   return status;
@@ -750,7 +767,7 @@ int szpset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = SZP;
   strcpy(prj->code, "SZP");
@@ -773,7 +790,7 @@ struct prjprm *prj;
 
   prj->w[3] = prj->pv[1] * sind(prj->pv[3]) + 1.0;
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[1] = -prj->pv[1] * cosd(prj->pv[3]) * sind(prj->pv[2]);
@@ -815,9 +832,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SZP) {
-    if (szpset(prj)) return 2;
+    if (status = szpset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -880,7 +897,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
         d = sqrt(d);
@@ -907,7 +924,7 @@ int stat[];
           *phip   = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
 
@@ -921,6 +938,10 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
+  
   return status;
 }
 
@@ -943,9 +964,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SZP) {
-    if (szpset(prj)) return 2;
+    if (status = szpset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -994,7 +1015,7 @@ int stat[];
         *(statp++) = 1;
       }
 
-      status = 4;
+      status = PRJERR_BAD_WORLD;
 
     } else {
       r = prj->w[6]*cosd(*thetap)/t;
@@ -1008,7 +1029,7 @@ int stat[];
           if (*thetap < prj->w[8]) {
             /* Divergence. */
             istat  = 1;
-            status = 4;
+            status = PRJERR_BAD_WORLD;
 
           } else if (fabs(prj->pv[1]) > 1.0) {
             /* Overlap. */
@@ -1026,7 +1047,7 @@ int stat[];
 
               if (*thetap < ((a > b) ? a : b)) {
                 istat  = 1;
-                status = 4;
+                status = PRJERR_BAD_WORLD;
               }
             }
           }
@@ -1039,6 +1060,10 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
+  
   return status;
 }
 
@@ -1065,7 +1090,7 @@ int tanset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = TAN;
   strcpy(prj->code, "TAN");
@@ -1098,7 +1123,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double r, xj, yj, yj2;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -1106,9 +1131,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TAN) {
-    if (tanset(prj)) return 2;
+    if (status = tanset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -1182,9 +1207,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TAN) {
-    if (tanset(prj)) return 2;
+    if (status = tanset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -1230,7 +1255,7 @@ int stat[];
         *yp = 0.0;
         *(statp++) = 1;
       }
-      status = 4;
+      status = PRJERR_BAD_WORLD;
 
     } else {
       r =  prj->r0*cosd(*thetap)/s;
@@ -1238,7 +1263,7 @@ int stat[];
       istat = 0;
       if (prj->bounds && s < 0.0) {
         istat  = 1;
-        status = 4;
+        status = PRJERR_BAD_WORLD;
       }
 
       for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -1249,6 +1274,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -1276,7 +1304,7 @@ int stgset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = STG;
   strcpy(prj->code, "STG");
@@ -1316,7 +1344,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double r, xj, yj, yj2;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -1324,9 +1352,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != STG) {
-    if (stgset(prj)) return 2;
+    if (status = stgset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -1400,9 +1428,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != STG) {
-    if (stgset(prj)) return 2;
+    if (status = stgset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -1448,7 +1476,7 @@ int stat[];
         *yp = 0.0;
         *(statp++) = 1;
       }
-      status = 4;
+      status = PRJERR_BAD_WORLD;
 
     } else {
       r = prj->w[0]*cosd(*thetap)/s;
@@ -1461,6 +1489,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -1493,7 +1524,7 @@ int sinset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = SIN;
   strcpy(prj->code, "SIN");
@@ -1543,9 +1574,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SIN) {
-    if (sinset(prj)) return 2;
+    if (status = sinset(prj)) return status;
   }
 
   xi  = prj->pv[1];
@@ -1606,7 +1637,7 @@ int stat[];
           *thetap = asind(sqrt(1.0 - r2));
         } else {
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
 
@@ -1630,7 +1661,7 @@ int stat[];
              *phip = 0.0;
              *thetap = 0.0;
              *(statp++) = 1;
-             status = 3;
+             status = PRJERR_BAD_PIX;
              continue;
            }
            d = sqrt(d);
@@ -1657,7 +1688,7 @@ int stat[];
              *phip = 0.0;
              *thetap = 0.0;
              *(statp++) = 1;
-             status = 3;
+             status = PRJERR_BAD_PIX;
              continue;
            }
 
@@ -1678,6 +1709,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -1700,9 +1734,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SIN) {
-    if (sinset(prj)) return 2;
+    if (status = sinset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -1760,7 +1794,7 @@ int stat[];
       istat = 0;
       if (prj->bounds && *thetap < 0.0) {
         istat  = 1;
-        status = 4;
+        status = PRJERR_BAD_WORLD;
       }
 
       for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -1781,7 +1815,7 @@ int stat[];
           t = -atand(prj->pv[1]*(*xp) - prj->pv[2]*(*yp));
           if (*thetap < t) {
             istat  = 1;
-            status = 4;
+            status = PRJERR_BAD_WORLD;
           }
         }
 
@@ -1792,6 +1826,9 @@ int stat[];
     }
   }
 
+  if (status = PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -1819,7 +1856,7 @@ int arcset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = ARC;
   strcpy(prj->code, "ARC");
@@ -1859,7 +1896,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double r, xj, yj, yj2;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -1867,9 +1904,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ARC) {
-    if (arcset(prj)) return 2;
+    if (status = arcset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -1936,7 +1973,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double cosphi, r, sinphi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -1944,9 +1981,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ARC) {
-    if (arcset(prj)) return 2;
+    if (status = arcset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -2027,7 +2064,7 @@ struct prjprm *prj;
   double d, d1, d2, r, zd, zd1, zd2;
   const double tol = 1.0e-13;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   strcpy(prj->code, "ZPN");
   prj->flag = ZPN;
@@ -2048,7 +2085,9 @@ struct prjprm *prj;
 
   /* Find the highest non-zero coefficient. */
   for (k = PVN-1; k >= 0 && prj->pv[k] == 0.0; k--);
-  if (k < 0) return 2;
+  if (k < 0) {
+    return PRJERR_BAD_PARAM_SET(prj);
+  }
 
   prj->n = k;
 
@@ -2061,7 +2100,7 @@ struct prjprm *prj;
     zd1 = 0.0;
     d1  = prj->pv[1];
     if (d1 <= 0.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     /* Find the point where the derivative first goes negative. */
@@ -2137,9 +2176,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZPN) {
-    if (zpnset(prj)) return 2;
+    if (status = zpnset(prj)) return status;
   }
 
   k = prj->n;
@@ -2192,7 +2231,7 @@ int stat[];
 
       if (k < 1) {
         /* Constant - no solution. */
-        return 2;
+        return PRJERR_BAD_PARAM_SET(prj);
       } else if (k == 1) {
         /* Linear. */
         zd = (r - prj->pv[0])/prj->pv[1];
@@ -2206,7 +2245,7 @@ int stat[];
         if (d < 0.0) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
         d = sqrt(d);
@@ -2220,7 +2259,7 @@ int stat[];
           if (zd < -tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = 3;
+            status = PRJERR_BAD_PIX;
             continue;
           }
           zd = 0.0;
@@ -2228,7 +2267,7 @@ int stat[];
           if (zd > PI+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = 3;
+            status = PRJERR_BAD_PIX;
             continue;
           }
           zd = PI;
@@ -2244,7 +2283,7 @@ int stat[];
           if (r < r1-tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = 3;
+            status = PRJERR_BAD_PIX;
             continue;
           }
           zd = zd1;
@@ -2252,7 +2291,7 @@ int stat[];
           if (r > r2+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = 3;
+            status = PRJERR_BAD_PIX;
             continue;
           }
           zd = zd2;
@@ -2293,6 +2332,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -2315,9 +2357,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZPN) {
-    if (zpnset(prj)) return 2;
+    if (status = zpnset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -2367,7 +2409,7 @@ int stat[];
     istat = 0;
     if (prj->bounds && s > prj->w[0]) {
       istat  = 1;
-      status = 4;
+      status = PRJERR_BAD_WORLD;
     }
 
     for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -2377,6 +2419,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -2404,7 +2449,7 @@ int zeaset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = ZEA;
   strcpy(prj->code, "ZEA");
@@ -2453,9 +2498,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZEA) {
-    if (zeaset(prj)) return 2;
+    if (status = zeaset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -2511,7 +2556,7 @@ int stat[];
         } else {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       } else {
@@ -2522,6 +2567,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -2536,7 +2584,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double cosphi, r, sinphi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -2544,9 +2592,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZEA) {
-    if (zeaset(prj)) return 2;
+    if (status = zeaset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -2632,7 +2680,7 @@ struct prjprm *prj;
   const double tol = 1.0e-4;
   double cosxi;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = AIR;
   strcpy(prj->code, "AIR");
@@ -2658,7 +2706,7 @@ struct prjprm *prj;
     prj->w[1] = log(cosxi)*(cosxi*cosxi)/(1.0-cosxi*cosxi);
     prj->w[2] = 0.5 - prj->w[1];
   } else {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[3] = prj->w[0] * prj->w[2];
@@ -2692,9 +2740,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIR) {
-    if (airset(prj)) return 2;
+    if (status = airset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -2764,7 +2812,7 @@ int stat[];
         if (k == 30) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
 
@@ -2794,7 +2842,7 @@ int stat[];
         if (k == 100) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
 
@@ -2806,6 +2854,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -2828,9 +2879,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIR) {
-    if (airset(prj)) return 2;
+    if (status = airset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -2885,7 +2936,7 @@ int stat[];
     } else {
       r = 0.0;
       istat  = 1;
-      status = 4;
+      status = PRJERR_BAD_WORLD;
     }
 
     for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -2895,6 +2946,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -2930,7 +2984,7 @@ int cypset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = CYP;
   strcpy(prj->code, "CYP");
@@ -2952,28 +3006,28 @@ struct prjprm *prj;
 
     prj->w[0] = prj->pv[2];
     if (prj->w[0] == 0.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     prj->w[1] = 1.0/prj->w[0];
 
     prj->w[2] = R2D*(prj->pv[1] + prj->pv[2]);
     if (prj->w[2] == 0.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     prj->w[3] = 1.0/prj->w[2];
   } else {
     prj->w[0] = prj->r0*prj->pv[2]*D2R;
     if (prj->w[0] == 0.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     prj->w[1] = 1.0/prj->w[0];
 
     prj->w[2] = prj->r0*(prj->pv[1] + prj->pv[2]);
     if (prj->w[2] == 0.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
 
     prj->w[3] = 1.0/prj->w[2];
@@ -2996,7 +3050,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double eta, s, t;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -3004,9 +3058,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CYP) {
-    if (cypset(prj)) return 2;
+    if (status = cypset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -3070,9 +3124,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CYP) {
-    if (cypset(prj)) return 2;
+    if (status = cypset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -3112,7 +3166,7 @@ int stat[];
     istat = 0;
     if (eta == 0.0) {
       istat  = 1;
-      status = 4;
+      status = PRJERR_BAD_WORLD;
 
     } else {
       eta = prj->w[2]*sind(*thetap)/eta;
@@ -3125,6 +3179,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -3158,7 +3215,7 @@ int ceaset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = CEA;
   strcpy(prj->code, "CEA");
@@ -3179,7 +3236,7 @@ struct prjprm *prj;
     prj->w[0] = 1.0;
     prj->w[1] = 1.0;
     if (prj->pv[1] <= 0.0 || prj->pv[1] > 1.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
     prj->w[2] = prj->r0/prj->pv[1];
     prj->w[3] = prj->pv[1]/prj->r0;
@@ -3187,7 +3244,7 @@ struct prjprm *prj;
     prj->w[0] = prj->r0*D2R;
     prj->w[1] = R2D/prj->r0;
     if (prj->pv[1] <= 0.0 || prj->pv[1] > 1.0) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(prj);
     }
     prj->w[2] = prj->r0/prj->pv[1];
     prj->w[3] = prj->pv[1]/prj->r0;
@@ -3219,9 +3276,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CEA) {
-    if (ceaset(prj)) return 2;
+    if (status = ceaset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -3263,7 +3320,7 @@ int stat[];
       if (fabs(s) > 1.0+tol) {
         s = 0.0;
         istat  = 1;
-        status = 3;
+        status = PRJERR_BAD_PIX;
       } else {
         s = copysign(90.0, s);
       }
@@ -3277,6 +3334,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -3291,7 +3351,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double eta, xi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -3299,9 +3359,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CEA) {
-    if (ceaset(prj)) return 2;
+    if (status = ceaset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -3369,7 +3429,7 @@ int carset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = CAR;
   strcpy(prj->code, "CAR");
@@ -3409,7 +3469,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double s, t;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -3417,9 +3477,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CAR) {
-    if (carset(prj)) return 2;
+    if (status = carset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -3474,7 +3534,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double eta, xi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -3482,9 +3542,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CAR) {
-    if (carset(prj)) return 2;
+    if (status = carset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -3552,7 +3612,7 @@ int merset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = MER;
   strcpy(prj->code, "MER");
@@ -3592,7 +3652,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double s, t;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -3600,9 +3660,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MER) {
-    if (merset(prj)) return 2;
+    if (status = merset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -3665,9 +3725,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MER) {
-    if (merset(prj)) return 2;
+    if (status = merset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -3707,7 +3767,7 @@ int stat[];
     if (*thetap <= -90.0 || *thetap >= 90.0) {
       eta = 0.0;
       istat  = 1;
-      status = 4;
+      status = PRJERR_BAD_WORLD;
     } else {
       eta = prj->r0*log(tand((*thetap+90.0)/2.0)) - prj->y0;
     }
@@ -3718,6 +3778,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -3745,7 +3808,7 @@ int sflset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = SFL;
   strcpy(prj->code, "SFL");
@@ -3793,9 +3856,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SFL) {
-    if (sflset(prj)) return 2;
+    if (status = sflset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -3835,7 +3898,7 @@ int stat[];
     istat = 0;
     if (s == 0.0) {
       istat  = 1;
-      status = 3;
+      status = PRJERR_BAD_PIX;
     } else {
       s = 1.0/s;
     }
@@ -3849,7 +3912,10 @@ int stat[];
     }
   }
 
-  return 0;
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
+  return status;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -3863,7 +3929,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double eta, xi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -3871,9 +3937,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SFL) {
-    if (sflset(prj)) return 2;
+    if (status = sflset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -3946,7 +4012,7 @@ int parset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = PAR;
   strcpy(prj->code, "PAR");
@@ -3999,9 +4065,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PAR) {
-    if (parset(prj)) return 2;
+    if (status = parset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -4049,7 +4115,7 @@ int stat[];
       s = 0.0;
       t = 0.0;
       istat  = 1;
-      status = 3;
+      status = PRJERR_BAD_PIX;
 
     } else {
       s = 1.0 - 4.0*r*r;
@@ -4069,7 +4135,7 @@ int stat[];
           *(statp++) = 0;
         } else {
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
       }
 
@@ -4078,6 +4144,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -4092,7 +4161,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double eta, s, xi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -4100,9 +4169,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PAR) {
-    if (parset(prj)) return 2;
+    if (status = parset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -4176,7 +4245,7 @@ int molset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = MOL;
   strcpy(prj->code, "MOL");
@@ -4224,9 +4293,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MOL) {
-    if (molset(prj)) return 2;
+    if (status = molset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -4275,7 +4344,7 @@ int stat[];
     if (r <= tol) {
       if (r < -tol) {
         istat  = 1;
-        status = 3;
+        status = PRJERR_BAD_PIX;
       } else {
         /* OK if fabs(x) < tol whence phi = 0.0. */
         istat = -1;
@@ -4294,7 +4363,7 @@ int stat[];
       if (fabs(z) > 1.0+tol) {
         z = 0.0;
         istat  = 1;
-        status = 3;
+        status = PRJERR_BAD_PIX;
       } else {
         z = copysign(1.0, z) + y0*r/PI;
       }
@@ -4306,7 +4375,7 @@ int stat[];
       if (fabs(z) > 1.0+tol) {
         z = 0.0;
         istat  = 1;
-        status = 3;
+        status = PRJERR_BAD_PIX;
       } else {
         z = copysign(1.0, z);
       }
@@ -4320,7 +4389,7 @@ int stat[];
           *(statp++) = 0;
         } else {
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
       }
 
@@ -4329,6 +4398,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -4343,7 +4415,7 @@ double x[], y[];
 int stat[];
 
 {
-  int k, mphi, mtheta, rowlen, rowoff;
+  int k, mphi, mtheta, rowlen, rowoff, status;
   double eta, gamma, resid, u, v, v0, v1, xi;
   const double tol = 1.0e-13;
   register int iphi, itheta, *statp;
@@ -4352,9 +4424,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MOL) {
-    if (molset(prj)) return 2;
+    if (status = molset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -4453,7 +4525,7 @@ int aitset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = AIT;
   strcpy(prj->code, "AIT");
@@ -4500,9 +4572,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIT) {
-    if (aitset(prj)) return 2;
+    if (status = aitset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -4553,7 +4625,7 @@ int stat[];
       if (s < 0.5) {
         if (s < 0.5-tol) {
           istat  = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
 
         s = 0.5;
@@ -4572,7 +4644,7 @@ int stat[];
       if (fabs(t) > 1.0) {
         if (fabs(t) > 1.0+tol) {
           istat  = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
         t = copysign(90.0, t);
 
@@ -4585,6 +4657,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -4599,7 +4674,7 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double cosphi, costhe, sinphi, sinthe, w;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -4607,9 +4682,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIT) {
-    if (aitset(prj)) return 2;
+    if (status = aitset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -4693,18 +4768,18 @@ int copset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = COP;
   strcpy(prj->code, "COP");
+  strcpy(prj->name, "conic perspective");
 
   if (undefined(prj->pv[1])) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
 
-  strcpy(prj->name, "conic perspective");
   prj->category  = CONIC;
   prj->pvrange   = 102;
   prj->simplezen = 0;
@@ -4715,14 +4790,14 @@ struct prjprm *prj;
 
   prj->w[0] = sind(prj->pv[1]);
   if (prj->w[0] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[1] = 1.0/prj->w[0];
 
   prj->w[3] = prj->r0*cosd(prj->pv[2]);
   if (prj->w[3] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[4] = 1.0/prj->w[3];
@@ -4747,16 +4822,16 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double alpha, dy, dy2, r, xj;
   register int ix, iy, *statp;
   register const double *xp, *yp;
   register double *phip, *thetap;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COP) {
-    if (copset(prj)) return 2;
+    if (status = copset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -4832,9 +4907,9 @@ int stat[];
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COP) {
-    if (copset(prj)) return 2;
+    if (status = copset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -4882,14 +4957,14 @@ int stat[];
     if (s == 0.0) {
       r = 0.0;
       istat  = 1;
-      status = 4;
+      status = PRJERR_BAD_WORLD;
 
     } else {
       r = prj->w[2] - prj->w[3]*sind(t)/s;
 
       if (prj->bounds && r*prj->w[0] < 0.0) {
         istat  = 1;
-        status = 4;
+        status = PRJERR_BAD_WORLD;
       }
     }
 
@@ -4900,6 +4975,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -4941,18 +5019,18 @@ struct prjprm *prj;
 {
   double theta1, theta2;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = COE;
   strcpy(prj->code, "COE");
+  strcpy(prj->name, "conic equal area");
 
   if (undefined(prj->pv[1])) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
 
-  strcpy(prj->name, "conic equal area");
   prj->category  = CONIC;
   prj->pvrange   = 102;
   prj->simplezen = 0;
@@ -4966,7 +5044,7 @@ struct prjprm *prj;
 
   prj->w[0] = (sind(theta1) + sind(theta2))/2.0;
   if (prj->w[0] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[1] = 1.0/prj->w[0];
@@ -5005,9 +5083,9 @@ int stat[];
   register double *phip, *thetap;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COE) {
-    if (coeset(prj)) return 2;
+    if (status = coeset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -5071,7 +5149,7 @@ int stat[];
           } else {
             t = 0.0;
             istat  = 1;
-            status = 3;
+            status = PRJERR_BAD_PIX;
           }
         } else {
           t = asind(w);
@@ -5084,6 +5162,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -5098,16 +5179,16 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double alpha, cosalpha, r, sinalpha, y0;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COE) {
-    if (coeset(prj)) return 2;
+    if (status = coeset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -5193,18 +5274,18 @@ int codset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = COD;
   strcpy(prj->code, "COD");
+  strcpy(prj->name, "conic equidistant");
 
   if (undefined(prj->pv[1])) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
 
-  strcpy(prj->name, "conic equidistant");
   prj->category  = CONIC;
   prj->pvrange   = 102;
   prj->simplezen = 0;
@@ -5220,7 +5301,7 @@ struct prjprm *prj;
   }
 
   if (prj->w[0] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[1] = 1.0/prj->w[0];
@@ -5244,16 +5325,16 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double alpha, dy, dy2, r, xj;
   register int ix, iy, *statp;
   register const double *xp, *yp;
   register double *phip, *thetap;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COD) {
-    if (codset(prj)) return 2;
+    if (status = codset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -5322,16 +5403,16 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double alpha, cosalpha, r, sinalpha, y0;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COD) {
-    if (codset(prj)) return 2;
+    if (status = codset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -5418,18 +5499,18 @@ struct prjprm *prj;
 {
   double cos1, cos2, tan1, tan2, theta1, theta2;
 
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = COO;
   strcpy(prj->code, "COO");
+  strcpy(prj->name, "conic orthomorphic");
 
   if (undefined(prj->pv[1])) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
 
-  strcpy(prj->name, "conic orthomorphic");
   prj->category  = CONIC;
   prj->pvrange   = 102;
   prj->simplezen = 0;
@@ -5452,14 +5533,14 @@ struct prjprm *prj;
     prj->w[0] = log(cos2/cos1)/log(tan2/tan1);
   }
   if (prj->w[0] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->w[1] = 1.0/prj->w[0];
 
   prj->w[3] = prj->r0*(cos1/prj->w[0])/pow(tan1,prj->w[0]);
   if (prj->w[3] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
   prj->w[2] = prj->w[3]*pow(tand((90.0 - prj->pv[1])/2.0),prj->w[0]);
   prj->w[4] = 1.0/prj->w[3];
@@ -5488,9 +5569,9 @@ int stat[];
   register double *phip, *thetap;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COO) {
-    if (cooset(prj)) return 2;
+    if (status = cooset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -5548,7 +5629,7 @@ int stat[];
         } else {
           t = 0.0;
           istat  = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
       } else {
         t = 90.0 - 2.0*atand(pow(r*prj->w[4],prj->w[1]));
@@ -5560,6 +5641,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -5581,9 +5665,9 @@ int stat[];
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COO) {
-    if (cooset(prj)) return 2;
+    if (status = cooset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -5630,7 +5714,7 @@ int stat[];
       r = 0.0;
       if (prj->w[0] >= 0.0) {
         istat  = 1;
-        status = 4;
+        status = PRJERR_BAD_WORLD;
       }
     } else {
       r = prj->w[3]*pow(tand((90.0 - *thetap)/2.0),prj->w[0]);
@@ -5643,6 +5727,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -5673,13 +5760,14 @@ int bonset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = BON;
   strcpy(prj->code, "BON");
+  strcpy(prj->name, "Bonne's");
 
   if (undefined(prj->pv[1])) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   if (prj->pv[1] == 0.0) {
@@ -5687,7 +5775,6 @@ struct prjprm *prj;
     return sflset(prj);
   }
 
-  strcpy(prj->name, "Bonne's");
   prj->category  = POLYCONIC;
   prj->pvrange   = 101;
   prj->simplezen = 0;
@@ -5722,7 +5809,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double alpha, dy, dy2, costhe, r, s, t, xj;
   register int ix, iy, *statp;
   register const double *xp, *yp;
@@ -5730,14 +5817,14 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->pv[1] == 0.0) {
     /* Sanson-Flamsteed. */
     return sflx2s(prj, nx, ny, sxy, spt, x, y, phi, theta, stat);
   }
 
   if (prj->flag != BON) {
-    if (bonset(prj)) return 2;
+    if (status = bonset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -5814,21 +5901,21 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double alpha, cosalpha, r, s, sinalpha, y0;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->pv[1] == 0.0) {
     /* Sanson-Flamsteed. */
     return sfls2x(prj, nphi, ntheta, spt, sxy, phi, theta, x, y, stat);
   }
 
   if (prj->flag != BON) {
-    if (bonset(prj)) return 2;
+    if (status = bonset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -5904,7 +5991,7 @@ int pcoset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = PCO;
   strcpy(prj->code, "PCO");
@@ -5946,7 +6033,7 @@ double phi[], theta[];
 int stat[];
 
 {
-  int mx, my, rowlen, rowoff;
+  int mx, my, rowlen, rowoff, status;
   double f, fneg, fpos, lambda, tanthe, the, theneg, thepos, w, x1, xj, xx,
          yj, ymthe, y1;
   const double tol = 1.0e-12;
@@ -5956,9 +6043,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PCO) {
-    if (pcoset(prj)) return 2;
+    if (status = pcoset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -6083,16 +6170,16 @@ double x[], y[];
 int stat[];
 
 {
-  int mphi, mtheta, rowlen, rowoff;
+  int mphi, mtheta, rowlen, rowoff, status;
   double alpha, costhe, cotthe, sinthe, therad;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PCO) {
-    if (pcoset(prj)) return 2;
+    if (status = pcoset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -6169,7 +6256,7 @@ int tscset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = TSC;
   strcpy(prj->code, "TSC");
@@ -6217,9 +6304,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TSC) {
-    if (tscset(prj)) return 2;
+    if (status = tscset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -6266,7 +6353,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       } else {
@@ -6274,7 +6361,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       }
@@ -6331,6 +6418,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -6353,9 +6443,9 @@ int stat[];
   register double *xp, *yp;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TSC) {
-    if (tscset(prj)) return 2;
+    if (status = tscset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -6468,14 +6558,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         yf = copysign(1.0, yf);
       }
@@ -6486,6 +6576,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -6513,7 +6606,7 @@ int cscset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = CSC;
   strcpy(prj->code, "CSC");
@@ -6590,9 +6683,9 @@ int stat[];
   const float p06 =  0.14381585;
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CSC) {
-    if (cscset(prj)) return 2;
+    if (status = cscset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -6639,7 +6732,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       } else {
@@ -6647,7 +6740,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       }
@@ -6747,6 +6840,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -6785,9 +6881,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CSC) {
-    if (cscset(prj)) return 2;
+    if (status = cscset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -6921,14 +7017,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         yf = copysign(1.0, yf);
       }
@@ -6939,6 +7035,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -6966,7 +7065,7 @@ int qscset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = QSC;
   strcpy(prj->code, "QSC");
@@ -7015,9 +7114,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != QSC) {
-    if (qscset(prj)) return 2;
+    if (status = qscset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -7064,7 +7163,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       } else {
@@ -7072,7 +7171,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
       }
@@ -7135,7 +7234,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
           continue;
         }
 
@@ -7233,6 +7332,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -7257,9 +7359,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != QSC) {
-    if (qscset(prj)) return 2;
+    if (status = qscset(prj)) return status;
   }
 
   if (ntheta > 0) {
@@ -7442,14 +7544,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = 4;
+          status = PRJERR_BAD_WORLD;
         }
         yf = copysign(1.0, yf);
       }
@@ -7460,6 +7562,9 @@ int stat[];
     }
   }
 
+  if (status == PRJERR_BAD_WORLD) {
+    PRJERR_BAD_WORLD_SET(prj);
+  }
   return status;
 }
 
@@ -7501,7 +7606,7 @@ int hpxset(prj)
 struct prjprm *prj;
 
 {
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
 
   prj->flag = HPX;
   strcpy(prj->code, "HPX");
@@ -7519,7 +7624,7 @@ struct prjprm *prj;
   prj->divergent = 0;
 
   if (prj->pv[1] <= 0.0 || prj->pv[2] <= 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(prj);
   }
 
   prj->m = ((int)(prj->pv[1]+0.5))%2;
@@ -7570,9 +7675,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != HPX) {
-    if (hpxset(prj)) return 2;
+    if (status = hpxset(prj)) return status;
   }
 
   if (ny > 0) {
@@ -7643,7 +7748,7 @@ int stat[];
           s = 0.0;
           t = 0.0;
           istat  = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         } else {
           s = 1.0/sigma;
           t = asind(t);
@@ -7674,7 +7779,7 @@ int stat[];
           *phip   = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = 3;
+          status = PRJERR_BAD_PIX;
         }
       }
 
@@ -7685,10 +7790,13 @@ int stat[];
         *thetap = 0.0;
         *(statp++) = 1;
       }
-      status = 3;
+      status = PRJERR_BAD_PIX;
     }
   }
 
+  if (status == PRJERR_BAD_PIX) {
+    PRJERR_BAD_PIX_SET(prj);
+  }
   return status;
 }
 
@@ -7703,7 +7811,7 @@ double x[], y[];
 int stat[];
 
 {
-  int h, mphi, mtheta, offset, rowlen, rowoff;
+  int h, mphi, mtheta, offset, rowlen, rowoff, status;
   double abssin, eta, sigma, sinthe, t, xi;
   register int iphi, itheta, *statp;
   register const double *phip, *thetap;
@@ -7711,9 +7819,9 @@ int stat[];
 
 
   /* Initialize. */
-  if (prj == 0x0) return 1;
+  if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != HPX) {
-    if (hpxset(prj)) return 2;
+    if (status = hpxset(prj)) return status;
   }
 
   if (ntheta > 0) {
