@@ -300,7 +300,7 @@ $(WCSLIB)(cel.o)      : cel.h prj.h sph.h wcserr.h wcsmath.h wcsprintf.h \
 $(WCSLIB)(fitshdr.o)  : wcsconfig.h fitshdr.h
 $(WCSLIB)(lin.o)      : lin.h wcserr.h wcsprintf.h
 $(WCSLIB)(log.o)      : log.h
-$(WCSLIB)(prj.o)      : prj.h wcsmath.h wcsprintf.h wcstrig.h
+$(WCSLIB)(prj.o)      : prj.h wcserr.h wcsmath.h wcsprintf.h wcstrig.h
 $(WCSLIB)(spc.o)      : spc.h spx.h wcserr.h wcsmath.h wcsprintf.h wcstrig.h
 $(WCSLIB)(sph.o)      : sph.h wcstrig.h
 $(WCSLIB)(spx.o)      : spx.h

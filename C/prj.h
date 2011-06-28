@@ -491,6 +491,8 @@
 #ifndef WCSLIB_PROJ
 #define WCSLIB_PROJ
 
+#include "wcserr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -501,6 +503,14 @@ extern "C" {
 
 extern const char *prj_errmsg[];
 
+enum prj_errmsg_enum {
+  PRJERR_SUCCESS          = 0,
+  PRJERR_NULL_POINTER     = 1,
+  PRJERR_BAD_PARAM        = 2,
+  PRJERR_BAD_PIX_COORDS   = 3,
+  PRJERR_BAD_WORLD_COORDS = 4
+};
+  
 extern const int CONIC, CONVENTIONAL, CYLINDRICAL, POLYCONIC,
                  PSEUDOCYLINDRICAL, QUADCUBE, ZENITHAL, HEALPIX;
 extern const char prj_categories[9][32];
@@ -555,6 +565,10 @@ struct prjprm {
 
   int (*prjx2s)(PRJX2S_ARGS);	/* Pointers to the spherical projection and */
   int (*prjs2x)(PRJS2X_ARGS);	/* deprojection functions.                  */
+
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
 };
 
 /* Size of the prjprm struct in int units, used by the Fortran wrappers. */

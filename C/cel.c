@@ -149,6 +149,8 @@ struct celprm *cel;
   double u, v, x, y, z;
   struct prjprm *celprj;
 
+  /* ERRTODO: No way to to set error message here because there's
+     nowhere to put it. */
   if (cel == 0x0) return 1;
 
   /* Initialize the projection driver routines. */
@@ -163,7 +165,7 @@ struct celprm *cel;
   }
 
   if ((status = prjset(celprj))) {
-    return status;
+    return wcserr_copy(&cel->err, &prj->err);
   }
 
   /* Defaults set by the projection routines. */
@@ -176,7 +178,10 @@ struct celprm *cel;
 
   } else if (fabs(cel->theta0) > 90.0) {
     if (fabs(cel->theta0) > 90.0 + tol) {
-      return 3;
+      /* ERRTODO: Better message */
+      return WCSERR_SET(
+        &cel->err, CELERR_BAD_COORD_TRANS,
+        "Invalid coordinate transformation parameter: theta0 > 90");
     }
 
     if (cel->theta0 > 90.0) {
@@ -234,7 +239,10 @@ struct celprm *cel;
       z = sqrt(x*x + y*y);
       if (z == 0.0) {
         if (slat0 != 0.0) {
-          return 3;
+          /* ERRTODO: Better message */
+          return WCSERR_SET(
+            &cel->err, CELERR_BAD_COORD_TRANS,
+            "Invalid coordinate transformation parameter");
         }
 
         /* latp determined solely by LATPOLEa in this case. */
@@ -255,7 +263,10 @@ struct celprm *cel;
               slz = -1.0;
             }
           } else {
-            return 3;
+            /* ERRTODO: Better message */
+            return WCSERR_SET(
+              &cel->err, CELERR_BAD_COORD_TRANS,
+              "Invalid coordinate transformation parameter");
           }
         }
 
@@ -328,7 +339,10 @@ struct celprm *cel;
       x = (sthe0 - sind(latp)*slat0)/z;
       y =  sphip*cthe0/clat0;
       if (x == 0.0 && y == 0.0) {
-        return 3;
+        /* ERRTODO: Better message */
+        return WCSERR_SET(
+          &cel->err, CELERR_BAD_COORD_TRANS,
+          "Invalid coordinate transformation parameter");
       }
       lngp = lng0 - atan2d(y,x);
     }
@@ -363,7 +377,10 @@ struct celprm *cel;
 
   /* Check for ill-conditioned parameters. */
   if (fabs(latp) > 90.0+tol) {
-    return 4;
+    /* ERRTODO: Better message */
+    return WCSERR_SET(
+      &cel->err, CELERR_ILL_COORD_TRANS,
+      "Ill-conditioned coordinate transformation parameters");
   }
 
   return 0;

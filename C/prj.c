@@ -100,6 +100,14 @@ const char *prj_errmsg[] = {
   "One or more of the (x,y) coordinates were invalid",
   "One or more of the (phi,theta) coordinates were invalid"};
 
+#define PRJERR_BAD_PARAM_SET(errm, prjname)                             \
+  WCSERR_SET((err), PRJERR_BAD_PARAM, "Invalid parameters for %s projection", (prjname));
+
+#define PRJERR_BAD_PIX_SET(errm, prjname)                             \
+  WCSERR_SET((err), PRJERR_BAD_PIX_COORDS, "One or more of the (x, y) coordinates were invalid for %s projection", (prjname));
+
+#define PRJERR_BAD_WORLD_SET(errm, prjname)                             \
+  WCSERR_SET((err), PRJERR_BAD_WORLD_COORDS, "One or more of the (lat, lng) coordinates were invalid for %s projection", (prjname));
 
 #define copysign(X, Y) ((Y) < 0.0 ? -fabs(X) : fabs(X))
 
@@ -130,6 +138,8 @@ struct prjprm *prj;
   register int k;
 
   if (prj == 0x0) return 1;
+
+  wcserr_ini(&prj->err);
 
   prj->flag = 0;
 
@@ -312,7 +322,9 @@ struct prjprm *prj;
     status = hpxset(prj);
   } else {
     /* Unrecognized projection code. */
-    status = 2;
+    status = WCSERR_SET(
+      &prj->err, PRJERR_BAD_PARAM,
+      "Unrecognized projection code '%s'", prj->code);
   }
 
   return status;
@@ -385,7 +397,7 @@ const double phi0, theta0;
   } else {
     if (prj->prjs2x(prj, 1, 1, 1, 1, &(prj->phi0), &(prj->theta0), &x0, &y0,
                     &stat)) {
-      return 2;
+      return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
     }
 
     prj->x0 = x0;
@@ -449,12 +461,12 @@ struct prjprm *prj;
 
   prj->w[0] = prj->r0*(prj->pv[1] + 1.0);
   if (prj->w[0] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
   }
 
   prj->w[3] = cosd(prj->pv[2]);
   if (prj->w[3] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
   }
 
   prj->w[2] = 1.0/prj->w[3];
@@ -562,7 +574,7 @@ int stat[];
           if (fabs(t) > 1.0+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = 3;
+            status PRJERR_BAD_PIX_SET(&prj->err, prj->name);
             continue;
           }
           t = copysign(90.0, t);
@@ -606,7 +618,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return 1;
   if (prj->flag != AZP) {
-    if (azpset(prj)) return 2;
+    if (azpset(prj)) return PRJERR_BAD_PARAM;
   }
 
   if (ntheta > 0) {
@@ -666,7 +678,7 @@ int stat[];
           if (*thetap < prj->w[5]) {
             /* Overlap. */
             istat  = 1;
-            status = 4;
+            status = PRJERR_BAD_WORLD_SET(&prj->err, prj->name);
 
           } else if (prj->w[7] > 0.0) {
             /* Divergence. */
@@ -683,7 +695,7 @@ int stat[];
 
               if (*thetap < ((a > b) ? a : b)) {
                 istat  = 1;
-                status = 4;
+                status = PRJERR_BAD_WORLD_SET(&prj->err, prj->name);
               }
             }
           }
@@ -761,7 +773,7 @@ struct prjprm *prj;
 
   prj->w[3] = prj->pv[1] * sind(prj->pv[3]) + 1.0;
   if (prj->w[3] == 0.0) {
-    return 2;
+    return PRJERR_BAD_PARAM_SET(&prj->err, prj->name);
   }
 
   prj->w[1] = -prj->pv[1] * cosd(prj->pv[3]) * sind(prj->pv[2]);
