@@ -95,9 +95,7 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
   int i, j, k, status;
   double *cd;
 
-  /* ERRTODO: We can't return an error message here because we have
-     nowhere to put it. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   /* Initialize the error structure first, so we can start returning
      errors. */
@@ -542,14 +540,16 @@ int wcssub(
   double *dstp;
   struct tabprm *tabp;
 
-  if (wcssrc == 0x0) return 1;
+  if (wcssrc == 0x0) return WCSERR_NULL_POINTER;
 
   if ((naxis = wcssrc->naxis) <= 0) {
-    return 2;
+    return WCSERR_SET(
+      &wcs->err, WCSERR_MEMORY,
+      "naxis must be positive (got %d)", naxis);
   }
 
   if (!(map = calloc(naxis, sizeof(int)))) {
-    return 2;
+    return WCSERR_SET(&wcsdst->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
   }
 
   if (nsub == 0x0) {
@@ -563,7 +563,7 @@ int wcssub(
     /* Construct an index array. */
     if (!(axes = calloc(naxis, sizeof(int)))) {
       free(map);
-      return 2;
+      return WCSERR_SET(&wcsdst->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
     }
 
     for (i = 0; i < naxis; i++) {
@@ -676,7 +676,8 @@ int wcssub(
       if (k == msub) map[msub++] = axis;
 
     } else {
-      status = 12;
+      status = WCSERR_SET(
+        &wcsdst->err, WCSERR_BAD_SUBIMAGE, wcs_errmsg[WCSERR_BAD_SUBIMAGE]);
       goto cleanup;
     }
   }
@@ -708,7 +709,8 @@ int wcssub(
         if (*(srcp++) == 0.0 || j == i) continue;
 
         if ((map[i] == 0) != (map[j] == 0)) {
-          status = 13;
+          status = WCSERR_SET(
+            &wcs->err, WCSERR_NON_SEPARABLE, wcs_errmsg[WCSERR_NON_SEPARABLE]);
           goto cleanup;
         }
       }
@@ -885,8 +887,7 @@ int wcssub(
     /* Allocate memory for tabprm structs. */
     if (!(wcsdst->tab = calloc(wcsdst->ntab, sizeof(struct tabprm)))) {
       wcsdst->ntab = 0;
-
-      status = 2;
+      return WCSERR_SET(&wcsdst->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
       goto cleanup;
     }
 
@@ -900,6 +901,7 @@ int wcssub(
 
       if (map[i-1]) {
         if ((status = tabcpy(1, wcssrc->tab + itab, tabp))) {
+          wcserr_copy(&wcsdst->err, &((wcssrc->tab + itab)->err));
           goto cleanup;
         }
 
@@ -928,7 +930,7 @@ int wcsfree(struct wcsprm *wcs)
 {
   int j;
 
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   if (wcs->flag == -1) {
     wcs->lin.flag = -1;
@@ -1026,7 +1028,7 @@ int wcsprt(const struct wcsprm *wcs)
   int i, j, k;
   struct wtbarr *wtbp;
 
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   if (wcs->flag != WCSSET) {
     wcsprintf("The wcsprm struct is UNINITIALIZED.\n");
@@ -1405,9 +1407,7 @@ int wcsset(struct wcsprm *wcs)
   struct spcprm *wcsspc = &(wcs->spc);
 
 
-  /* ERRTODO: No way to to set error message here because there's
-     nowhere to put it. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   /* Determine axis types from CTYPEia. */
   if ((status = wcs_types(wcs))) {
@@ -1657,9 +1657,7 @@ int wcs_types(struct wcsprm *wcs)
   char ctypei[16], pcode[4], requir[9], scode[4], specsys[9];
   int i, j, m, naxis, *ndx = 0x0, type;
 
-  /* ERRTODO: No way to to set error message here because there's
-     nowhere to put it. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   /* Parse the CTYPEia keyvalues. */
   pcode[0]  = '\0';
@@ -1925,9 +1923,7 @@ int wcs_units(struct wcsprm *wcs)
   double scale, offset, power;
   struct wcserr uniterr;
   
-  /* ERRTODO: No way to to set error message here because there's
-     nowhere to put it. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
   wcserr_ini(&uniterr);
   
@@ -1944,8 +1940,8 @@ int wcs_units(struct wcsprm *wcs)
       /* Spectral axis. */
       strncpy(ctype, wcs->ctype[i], 8);
       ctype[8] = '\0';
-      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, &wcs->err);
-      wcserr_init(&wcs->err);
+      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, &uniterr);
+      wcserr_init(&uniterr);
       break;
 
     default:
@@ -2006,23 +2002,27 @@ int wcsp2s(
   struct prjprm *wcsprj = &(wcscel->prj);
 
   /* Initialize if required. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
   if (wcs->flag != WCSSET) {
     if ((status = wcsset(wcs))) return status;
   }
 
   /* Sanity check. */
-  if (ncoord < 1 || (ncoord > 1 && nelem < wcs->naxis)) return 4;
+  if (ncoord < 1 || (ncoord > 1 && nelem < wcs->naxis)) {
+    return WCSERR_SET(
+      &wcs->err, WCSERR_BAD_CTYPE,
+      "ncoord and/or nelem inconsistent with the wcsprm");                
+  }
 
 
   /* Apply pixel-to-world linear transformation. */
   if ((status = linp2x(&(wcs->lin), ncoord, nelem, pixcrd, imgcrd))) {
-    return status;
+    return wcserr_copy(&wcs->err, &(wcs->lin.err));
   }
 
   /* Initialize status vectors. */
   if (!(istatp = calloc(ncoord, sizeof(int)))) {
-    return 2;
+    return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
   }
 
   stat[0] = 0;
@@ -2063,7 +2063,7 @@ int wcsp2s(
           face = (int)(*(img+wcs->cubeface) + 0.5);
           if (fabs(*(img+wcs->cubeface) - face) > 1e-10) {
             *statp |= bits;
-            status = 8;
+            status = WCSERR_BAD_PIX;
 
           } else {
             *statp = 0;
@@ -2088,7 +2088,7 @@ int wcsp2s(
               break;
             default:
               *statp |= bits;
-              status = 8;
+              status = WCSERR_BAD_PIX;
             }
           }
 
@@ -2112,8 +2112,8 @@ int wcsp2s(
       if ((istat = celx2s(wcscel, nx, ny, nelem, nelem, imgcrd+i,
                           imgcrd+wcs->lat, phi, theta, world+i,
                           world+wcs->lat, istatp))) {
-        if (istat == 5) {
-          status = 8;
+        if (istat == CELERR_BAD_PIX) {
+          status = WCSERR_BAD_PIX;
         } else {
           status = istat + 3;
           goto cleanup;
@@ -2154,8 +2154,8 @@ int wcsp2s(
       }
 
       if (istat) {
-        if (istat == 3) {
-          status = 8;
+        if (istat == LOGERR_BAD_X || istat == SPCERR_BAD_X) {
+          status = WCSERR_BAD_PIX;
         } else {
           status = istat + 3;
           goto cleanup;
@@ -2179,8 +2179,8 @@ int wcsp2s(
   for (itab = 0; itab < wcs->ntab; itab++) {
     istat = tabx2s(wcs->tab + itab, ncoord, nelem, imgcrd, world, istatp);
 
-    if (istat == 4) {
-      status = 8;
+    if (istat == TABERR_BAD_X) {
+      status = WCSERR_BAD_PIX;
 
       bits = 0;
       for (m = 0; m < wcs->tab[itab].M; m++) {
@@ -2189,7 +2189,8 @@ int wcsp2s(
       wcsutil_setBit(ncoord, istatp, bits, stat);
 
     } else if (istat) {
-      status = (istat == 3) ? 5 : istat;
+      wcserr_copy(&wcs->err, &((wcs->tab + itab)->err));
+      wcs->err.status = status = (istat == TABERR_BAD_PARAMS) ? WCSERR_BAD_PARAM : istat;
       goto cleanup;
     }
   }
@@ -2203,6 +2204,10 @@ int wcsp2s(
 
 cleanup:
   free(istatp);
+
+  if (status == WCSERR_BAD_PIX && wcs->err.msg[0] == 0) {
+    WCSERR_SET(&wcs->err, WCSERR_BAD_PIX, wcs_errmsg[WCSERR_BAD_PIX]);
+  }
   return status;
 }
 
@@ -2231,17 +2236,21 @@ int wcss2p(
 
   /* Initialize if required. */
   status = 0;
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
   if (wcs->flag != WCSSET) {
     if ((status = wcsset(wcs))) return status;
   }
 
   /* Sanity check. */
-  if (ncoord < 1 || (ncoord > 1 && nelem < wcs->naxis)) return 4;
+  if (ncoord < 1 || (ncoord > 1 && nelem < wcs->naxis)) {
+    return WCSERR_SET(
+      &wcs->err, WCSERR_BAD_CTYPE,
+      "ncoord and/or nelem inconsistent with the wcsprm");                
+  }
 
   /* Initialize status vectors. */
   if (!(istatp = calloc(ncoord, sizeof(int)))) {
-    return 2;
+    return WCSERR_SET(&wcs->err, WCSERR_MEMORY, wcs_errmsg[WCSERR_MEMORY]);
   }
 
   stat[0] = 0;
@@ -2281,8 +2290,8 @@ int wcss2p(
       if ((istat = cels2x(wcscel, nlng, nlat, nelem, nelem, world+i,
                           world+wcs->lat, phi, theta, imgcrd+i,
                           imgcrd+wcs->lat, istatp))) {
-        if (istat == 6) {
-          status = 9;
+        if (istat == CELERR_BAD_WORLD) {
+          status = WCSERR_BAD_WORLD;
         } else {
           status = istat + 3;
           goto cleanup;
@@ -2298,7 +2307,7 @@ int wcss2p(
         wcsutil_setAli(ncoord, 1, istatp);
       }
 
-      if (istat == 6) {
+      if (istat == CELERR_BAD_WORLD) {
         bits = (1 << i) | (1 << wcs->lat);
         wcsutil_setBit(ncoord, istatp, bits, stat);
       }
@@ -2358,8 +2367,8 @@ int wcss2p(
       }
 
       if (istat) {
-        if (istat == 4) {
-          status = 9;
+        if (istat == LOGERR_BAD_WORLD || istat == SPCERR_BAD_WORLD) {
+          status = WCSERR_BAD_WORLD;
         } else {
           status = istat + 3;
           goto cleanup;
@@ -2383,8 +2392,8 @@ int wcss2p(
   for (itab = 0; itab < wcs->ntab; itab++) {
     istat = tabs2x(wcs->tab + itab, ncoord, nelem, world, imgcrd, istatp);
 
-    if (istat == 5) {
-      status = 9;
+    if (istat == TABERR_BAD_WORLD) {
+      status = WCSERR_BAD_WORLD;
 
       bits = 0;
       for (m = 0; m < wcs->tab[itab].M; m++) {
@@ -2393,7 +2402,8 @@ int wcss2p(
       wcsutil_setBit(ncoord, istatp, bits, stat);
 
     } else if (istat) {
-      status = (istat == 3) ? 5 : istat;
+      wcserr_copy(&wcs->err, &((wcs->tab + itab)->err));
+      wcs->err.status = status = (istat == TABERR_BAD_PARAMS) ? WCSERR_BAD_PARAM : istat;
       goto cleanup;
     }
   }
@@ -2408,12 +2418,16 @@ int wcss2p(
 
   /* Apply world-to-pixel linear transformation. */
   if ((istat = linx2p(&(wcs->lin), ncoord, nelem, imgcrd, pixcrd))) {
-    status = istat;
+    status = wcserr_copy(&wcs->err, &(wcs->lin.err));
     goto cleanup;
   }
 
 cleanup:
   free(istatp);
+
+  if (status == WCSERR_BAD_WORLD) {
+    WCSERR_SET(&wcs->err, WCSERR_BAD_WORLD, wcs_errmsg[WCSERR_BAD_WORLD]);
+  }
   return status;
 }
 
@@ -2449,7 +2463,7 @@ int wcsmix(
   struct wcsprm wcs0;
 
   /* Initialize if required. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
   if (wcs->flag != WCSSET) {
     if ((status = wcsset(wcs))) return status;
   }
@@ -2499,7 +2513,9 @@ int wcsmix(
       *worldlat = lat0;
       if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
       d0 = pixcrd[mixpix] - pixmix;
 
@@ -2510,7 +2526,9 @@ int wcsmix(
       *worldlat = lat1;
       if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
       d1 = pixcrd[mixpix] - pixmix;
 
@@ -2537,7 +2555,9 @@ int wcsmix(
           *worldlat = lat0;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d0 = pixcrd[mixpix] - pixmix;
 
@@ -2579,7 +2599,9 @@ int wcsmix(
             *worldlat = lat;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
 
             /* Check for a solution. */
@@ -2630,7 +2652,9 @@ int wcsmix(
           *worldlat = lat0;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d0 = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2639,7 +2663,9 @@ int wcsmix(
           *worldlat = lat1;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d1 = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2648,7 +2674,9 @@ int wcsmix(
             *worldlat = lat0m;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
             d0m = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2658,7 +2686,9 @@ int wcsmix(
             *worldlat = lat1m;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
             d1m = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2692,7 +2722,9 @@ int wcsmix(
       *worldlng = lng0;
       if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
       d0 = pixcrd[mixpix] - pixmix;
 
@@ -2703,7 +2735,9 @@ int wcsmix(
       *worldlng = lng1;
       if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
       d1 = pixcrd[mixpix] - pixmix;
 
@@ -2729,7 +2763,9 @@ int wcsmix(
           *worldlng = lng0;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d0 = pixcrd[mixpix] - pixmix;
 
@@ -2771,7 +2807,9 @@ int wcsmix(
             *worldlng = lng;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
 
             /* Check for a solution. */
@@ -2822,7 +2860,9 @@ int wcsmix(
           *worldlng = lng0;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d0 = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2831,7 +2871,9 @@ int wcsmix(
           *worldlng = lng1;
           if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                stat))) {
-            return (status == 9) ? 10 : status;
+            wcs->err.status = status = (
+              (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+            return status;
           }
           d1 = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2840,7 +2882,9 @@ int wcsmix(
             *worldlng = lng0m;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
             d0m = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2850,7 +2894,9 @@ int wcsmix(
             *worldlng = lng1m;
             if ((status = wcss2p(wcs, 1, 0, world, phi, theta, imgcrd, pixcrd,
                                  stat))) {
-              return (status == 9) ? 10 : status;
+              wcs->err.status = status = (
+                (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+              return status;
             }
             d1m = fabs(pixcrd[mixpix] - pixmix);
 
@@ -2918,7 +2964,9 @@ int wcsmix(
     *worldlat = *theta;
     if ((status = wcss2p(&wcs0, 1, 0, world, phi, theta, imgcrd, pixcrd,
                          stat))) {
-      return (status == 9) ? 10 : status;
+      wcs->err.status = status = (
+        (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+      return status;
     }
     d0 = pixcrd[mixpix] - pixmix;
 
@@ -2937,7 +2985,9 @@ int wcsmix(
       *worldlng = phi1;
       if ((status = wcss2p(&wcs0, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
       d1 = pixcrd[mixpix] - pixmix;
 
@@ -2970,7 +3020,9 @@ int wcsmix(
       *worldlng = phi0 + lambda*dphi;
       if ((status = wcss2p(&wcs0, 1, 0, world, phi, theta, imgcrd, pixcrd,
                            stat))) {
-        return (status == 9) ? 10 : status;
+        wcs->err.status = status = (
+          (status == WCSERR_BAD_WORLD) ? WCSERR_BAD_WORLD_COORD : status);
+        return status;
       }
 
       /* Check for a solution. */
@@ -2995,7 +3047,7 @@ int wcsmix(
 
 
   /* No solution. */
-  return 11;
+  return WCSERR_SET(&wcs->err, WCSERR_NO_SOLUTION, wcs_errmsg[WCSERR_NO_SOLUTION]);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -3010,7 +3062,7 @@ int wcssptr(
   double cdelt, crval;
 
   /* Initialize if required. */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
   if (wcs->flag != WCSSET) {
     if ((status = wcsset(wcs))) return status;
   }
@@ -3026,7 +3078,9 @@ int wcssptr(
 
       if (j >= wcs->naxis) {
         /* No spectral axis. */
-        return 12;
+        return WCSERR_SET(
+          &wcs->err, WCSERR_BAD_SUBIMAGE,
+          "No spectral axis found.");
       }
     }
 
@@ -3037,7 +3091,8 @@ int wcssptr(
   if ((status = spctrn(wcs->ctype[j], wcs->crval[j], wcs->cdelt[j],
                        wcs->restfrq, wcs->restwav, ctype, &crval, &cdelt,
                        &wcs->err))) {
-    return 6;
+    wcs->err.status = WCSERR_BAD_COORD_TRANS;
+    return WCSERR_BAD_COORD_TRANS;
   }
 
 

@@ -148,11 +148,11 @@ extern "C" {
 extern const char *log_errmsg[];
 
 enum log_errmsg_enum {
-  LOGERR_SUCCESS = 0,
-  LOGERR_NULL_POINTER = 1,
+  LOGERR_SUCCESS         = 0,
+  LOGERR_NULL_POINTER    = 1,
   LOGERR_BAD_LOG_REF_VAL = 2,
-  LOGERR_BAD_X_VAL = 3,
-  LOGERR_BAD_WORLD_VAL = 4
+  LOGERR_BAD_X           = 3,
+  LOGERR_BAD_WORLD       = 4
 };
   
 int logx2s(double crval, int nx, int sx, int slogc, const double x[],

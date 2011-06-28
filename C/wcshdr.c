@@ -69,7 +69,7 @@ int wcstab(struct wcsprm *wcs)
 
 
   /* Free memory previously allocated by wcstab(). */
-  if (wcs == 0x0) return 1;
+  if (wcs == 0x0) return WCSHDRERR_NULL_POINTER;
 
   if (wcs->flag != -1 && wcs->m_flag == WCSSET) {
     if (wcs->wtb == wcs->m_wtb) wcs->wtb = 0x0;
@@ -94,7 +94,7 @@ int wcstab(struct wcsprm *wcs)
   /* Determine the number of -TAB axes. */
   naxis = wcs->naxis;
   if (!(tabax = calloc(naxis, sizeof(int)))) {
-    return 2;
+    return WCSERR_SET(&wcs->err, WCSHDRERR_MEMORY, wcshdr_errmsg[WCSHDRERR_MEMORY]);
   }
 
   ntabax = 0;
@@ -124,7 +124,7 @@ int wcstab(struct wcsprm *wcs)
         (PSi_2a = calloc(ntabax, sizeof(char[72]))) &&
         (PVi_3a = calloc(ntabax, sizeof(int)))      &&
         (tabidx = calloc(ntabax, sizeof(int))))) {
-    status = 2;
+    status = WCSERR_SET(&wcs->err, WCSHDRERR_MEMORY, wcshdr_errmsg[WCSHDRERR_MEMORY]);
     goto cleanup;
   }
 
@@ -183,7 +183,10 @@ int wcstab(struct wcsprm *wcs)
   for (itabax = 0; itabax < ntabax; itabax++) {
     /* These have no defaults. */
     if (!PSi_0a[itabax][0] || !PSi_1a[itabax][0]) {
-      status = 3;
+      /* ERRTODO: Better error message */
+      status = WCSERR_SET(
+        &wcs->err, WCSHDRERR_BAD_TABULAR_PARAMS,
+        wcshdr_errmsg[WCSHDRERR_BAD_TABULAR_PARAMS]);
       goto cleanup;
     }
 
@@ -207,7 +210,7 @@ int wcstab(struct wcsprm *wcs)
   }
 
   if (!(wcs->tab = calloc(wcs->ntab, sizeof(struct tabprm)))) {
-    status = 2;
+    status = WCSERR_SET(&wcs->err, WCSHDRERR_MEMORY, wcshdr_errmsg[WCSHDRERR_MEMORY]);
     goto cleanup;
   }
   wcs->m_tab = wcs->tab;
@@ -224,6 +227,7 @@ int wcstab(struct wcsprm *wcs)
 
   for (itab = 0; itab < wcs->ntab; itab++) {
     if ((status = tabini(1, wcs->tab[itab].M, 0, wcs->tab + itab))) {
+      wcserr_copy(&wcs->err, &((wcs->tab + itab)->err));
       goto cleanup;
     }
   }
@@ -248,7 +252,10 @@ int wcstab(struct wcsprm *wcs)
   for (itab = 0; itab < wcs->ntab; itab++) {
     for (m = 0; m < wcs->tab[itab].M; m++) {
       if (wcs->tab[itab].map[m] < 0) {
-        status = 3;
+        /* ERRTODO: Better error message */
+        status = WCSERR_SET(
+          &wcs->err, WCSHDRERR_BAD_TABULAR_PARAMS,
+          wcshdr_errmsg[WCSHDRERR_BAD_TABULAR_PARAMS]);
         goto cleanup;
       }
     }
@@ -270,7 +277,7 @@ int wcstab(struct wcsprm *wcs)
   if (!(wcs->wtb = calloc(wcs->nwtb, sizeof(struct wtbarr)))) {
     wcs->nwtb = 0;
 
-    status = 2;
+    status = WCSERR_SET(&wcs->err, WCSHDRERR_MEMORY, wcshdr_errmsg[WCSHDRERR_MEMORY]);
     goto cleanup;
   }
   wcs->m_wtb = wcs->wtb;
@@ -361,7 +368,7 @@ int wcsidx(int nwcs, struct wcsprm **wcs, int alts[27])
   }
 
   if (wcs == 0x0) {
-    return 1;
+    return WCSHDRERR_NULL_POINTER;
   }
 
   wcsp = *wcs;
@@ -398,7 +405,7 @@ int wcsbdx(int nwcs, struct wcsprm **wcs, int type, short alts[1000][28])
   }
 
   if (wcs == 0x0) {
-    return 1;
+    return WCSHDRERR_NULL_POINTER;
   }
 
   wcsp = *wcs;
@@ -445,7 +452,7 @@ int wcsvfree(int *nwcs, struct wcsprm **wcs)
   struct wcsprm *wcsp;
 
   if (wcs == 0x0) {
-    return 1;
+    return WCSHDRERR_NULL_POINTER;
   }
 
   wcsp = *wcs;
@@ -477,7 +484,7 @@ int wcshdo(int relax, struct wcsprm *wcs, int *nkeyrec, char **header)
   *header  = 0x0;
 
   if (wcs == 0x0) {
-    return 1;
+    return WCSHDRERR_NULL_POINTER;
   }
 
   if (wcs->flag != WCSSET) {
@@ -913,6 +920,9 @@ int wcshdo(int relax, struct wcsprm *wcs, int *nkeyrec, char **header)
       colnum, colax, keyvalue, comment, nkeyrec, header, &status);
   }
 
+  if (status == WCSHDRERR_MEMORY) {
+    WCSERR_SET(&wcs->err, WCSHDRERR_MEMORY, wcshdr_errmsg[WCSHDRERR_MEMORY]);
+  }
   return status;
 }
 
@@ -934,7 +944,8 @@ void wcshdo_util(
   const char keycomment[],
   int  *nkeyrec,
   char **header,
-  int  *status)
+  int  *status,
+  struct wcserr *err)
 
 {
   char ch0, ch1, *hptr, keyword[16], *kptr;
@@ -946,7 +957,7 @@ void wcshdo_util(
   if ((*nkeyrec)%32 == 0) {
     nbyte = ((*nkeyrec)/32 + 1) * 2880;
     if (!(hptr = realloc(*header, nbyte))) {
-      *status = 2;
+      *status = WCSHDRERR_MEMORY;
       return;
     }
 

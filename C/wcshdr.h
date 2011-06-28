@@ -1067,6 +1067,13 @@ extern "C" {
 
 extern const char *wcshdr_errmsg[];
 
+enum wcshdr_errmsg_enum {
+  WCSHDRERR_SUCCESS            = 0,
+  WCSHDRERR_NULL_POINTER       = 1,
+  WCSHDRERR_MEMORY             = 2,
+  WCSHDRERR_BAD_TABULAR_PARAMS = 3,
+  WCSHDRERR_PARSER             = 4
+};
 
 int wcspih(char *header, int nkeyrec, int relax, int ctrl, int *nreject,
            int *nwcs, struct wcsprm **wcs);

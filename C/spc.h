@@ -670,11 +670,11 @@ extern "C" {
 extern const char *spc_errmsg[];
 
 enum spc_errmsg_enum {
-  SPCERR_SUCCESS = 0,
-  SPCERR_NULL_POINTER = 1,
+  SPCERR_SUCCESS         = 0,
+  SPCERR_NULL_POINTER    = 1,
   SPCERR_BAD_SPEC_PARAMS = 2,
-  SPCERR_BAD_X_VAL = 3,
-  SPCERR_BAD_SPEC_VAL = 4
+  SPCERR_BAD_X           = 3,
+  SPCERR_BAD_SPEC        = 4
 };
 
 struct spcprm {
