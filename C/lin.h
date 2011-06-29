@@ -100,6 +100,9 @@
 *                         1: Null linprm pointer passed.
 *                         2: Memory allocation failed.
 *
+* If the return value >= 2, a detailed error message is set in the
+* lin->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * lincpy() - Copy routine for the linprm struct
 * ---------------------------------------------
@@ -129,6 +132,9 @@
 *                         1: Null linprm pointer passed.
 *                         2: Memory allocation failed.
 *
+* If the return value >= 2, a detailed error message is set in the
+* lin->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * linfree() - Destructor for the linprm struct
 * --------------------------------------------
@@ -184,6 +190,9 @@
 *                         2: Memory allocation failed.
 *                         3: PCi_ja matrix is singular.
 *
+* If the return value >= 2, a detailed error message is set in the
+* lin->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * linp2x() - Pixel-to-world linear transformation
 * -----------------------------------------------
@@ -211,6 +220,9 @@
 *                         2: Memory allocation failed.
 *                         3: PCi_ja matrix is singular.
 *
+* If the return value >= 2, a detailed error message is set in the
+* lin->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * linx2p() - World-to-pixel linear transformation
 * -----------------------------------------------
@@ -237,6 +249,9 @@
 *                         2: Memory allocation failed.
 *                         3: PCi_ja matrix is singular.
 *
+* If the return value >= 2, a detailed error message is set in the
+* lin->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * linprm struct - Linear transformation parameters
 * ------------------------------------------------
@@ -328,6 +343,10 @@
 *   double *m_cdelt
 *     (For internal use only.)
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *
 * Global variable: const char *lin_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -348,10 +367,10 @@ extern "C" {
 extern const char *lin_errmsg[];
 
 enum lin_errmsg_enum {
-  LINERR_SUCCESS      = 0,
-  LINERR_NULL_POINTER = 1,
-  LINERR_MEMORY       = 2,
-  LINERR_SINGULAR_MTX = 3
+  LINERR_SUCCESS      = 0, /* Success */
+  LINERR_NULL_POINTER = 1, /* Null linprm pointer passed */
+  LINERR_MEMORY       = 2, /* Memory allocation failed */
+  LINERR_SINGULAR_MTX = 3  /* PCi_ja matrix is singular */
 };
   
 struct linprm {

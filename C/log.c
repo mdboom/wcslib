@@ -116,7 +116,7 @@ int logs2x(
     } else {
       *(statp++) = 1;
       status = WCSERR_SET(
-        err, LOGERR_BAD_WORLD_VAL, log_errmsg[LOGERR_BAD_WORLD_VAL]);
+        err, LOGERR_BAD_WORLD, log_errmsg[LOGERR_BAD_WORLD]);
     }
   }
 

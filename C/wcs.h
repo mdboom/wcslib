@@ -152,6 +152,9 @@
 *                         1: Null wcsprm pointer passed.
 *                         2: Memory allocation failed.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * wcsnpv() - Memory allocation for PVi_ma
 * ---------------------------------------
@@ -264,6 +267,9 @@
 *                        12: Invalid subimage specification.
 *                        13: Non-separable subimage coordinate system.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcsdst->err struct.  See wcserr.h for error handling instructions.
+*                        
 * Notes:
 *   Combinations of subimage axes of particular types may be extracted in the
 *   same order as they occur in the input image by combining preprocessor
@@ -369,6 +375,9 @@
 *                         7: Ill-conditioned coordinate transformation
 *                            parameters.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * wcsp2s() - Pixel-to-world transformation
 * ----------------------------------------
@@ -429,6 +438,9 @@
 *                         8: One or more of the pixel coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * wcss2p() - World-to-pixel transformation
 * ----------------------------------------
@@ -491,6 +503,9 @@
 *                         9: One or more of the world coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * wcsmix() - Hybrid coordinate transformation
 * -------------------------------------------
@@ -571,6 +586,9 @@
 *                        10: Invalid world coordinate.
 *                        11: No solution found in the specified interval.
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                        
 * Notes:
 *   Initially the specified solution interval is checked to see if it's a
 *   "crossing" interval.  If it isn't, a search is made for a crossing
@@ -632,6 +650,9 @@
 *                        12: Invalid subimage specification (no spectral
 *                            axis).
 *
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * wcsprm struct - Coordinate transformation parameters
 * ----------------------------------------------------
@@ -1132,6 +1153,10 @@
 *   struct wtbarr *m_wtb
 *     (For internal use only.)
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *
 * pscard struct - Store for PSi_ma keyrecords
 * -------------------------------------------
@@ -1248,20 +1273,20 @@ extern "C" {
 extern const char *wcs_errmsg[];
 
 enum wcs_errmsg_enum {
-  WCSERR_SUCCESS         = 0,
-  WCSERR_NULL_POINTER    = 1,
-  WCSERR_MEMORY          = 2,
-  WCSERR_SINGULAR_MTX    = 3,
-  WCSERR_BAD_CTYPE       = 4,
-  WCSERR_BAD_PARAM       = 5,
-  WCSERR_BAD_COORD_TRANS = 6,
-  WCSERR_ILL_COORD_TRANS = 7,
-  WCSERR_BAD_PIX         = 8,
-  WCSERR_BAD_WORLD       = 9,
-  WCSERR_BAD_WORLD_COORD = 10,
-  WCSERR_NO_SOLUTION     = 11,
-  WCSERR_BAD_SUBIMAGE    = 12,
-  WCSERR_NON_SEPARABLE   = 13
+  WCSERR_SUCCESS         = 0, /* Success */
+  WCSERR_NULL_POINTER    = 1, /* Null wcsprm pointer passed */
+  WCSERR_MEMORY          = 2, /* Memory allocation failed */
+  WCSERR_SINGULAR_MTX    = 3, /* Linear transformation matrix is singular */
+  WCSERR_BAD_CTYPE       = 4, /* Inconsistent or unrecognized coordinate axis types */
+  WCSERR_BAD_PARAM       = 5, /* Invalid parameter value */
+  WCSERR_BAD_COORD_TRANS = 6, /* Invalid coordinate transformation parameters */
+  WCSERR_ILL_COORD_TRANS = 7, /* Ill-conditioned coordinate transformation parameters */
+  WCSERR_BAD_PIX         = 8, /* One or more of the pixel coordinates were invalid */
+  WCSERR_BAD_WORLD       = 9, /* One or more of the world coordinates were invalid */
+  WCSERR_BAD_WORLD_COORD = 10, /* Invalid world coordinate */
+  WCSERR_NO_SOLUTION     = 11, /* No solution found in the specified interval */
+  WCSERR_BAD_SUBIMAGE    = 12, /* Invalid subimage specification */
+  WCSERR_NON_SEPARABLE   = 13  /* Non-separable subimage coordinate system */
 };
 
   

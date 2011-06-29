@@ -97,6 +97,11 @@
 *
 =                         value *= scale;
 *
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
+*
 * Function return value:
 *             int       Status return value:
 *                          0: Success.
@@ -137,6 +142,11 @@
 *                       delimited by its matching ']'.  Blanks preceding '['
 *                       will be stripped off, but text following the closing
 *                       bracket will be preserved without modification.
+*                       
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -222,6 +232,11 @@
 *                       Corresponding character strings, wcsunits_types[] and
 *                       wcsunits_units[], are predefined to describe each
 *                       quantity and its canonical units.
+*                       
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -325,19 +340,19 @@ extern "C" {
 extern const char *wcsunits_errmsg[];
 
 enum wcsunits_errmsg_enum {
-  UNITSERR_SUCCESS            = 0,
-  UNITSERR_BAD_NUM_MULTIPLIER = 1,
-  UNITSERR_DANGLING_BINOP     = 2,
-  UNITSERR_BAD_INITIAL_SYMBOL = 3,
-  UNITSERR_FUNCTION_CONTEXT   = 4,
-  UNITSERR_BAD_EXPON_SYMBOL   = 5,
-  UNITSERR_UNBAL_BRACKET      = 6,
-  UNITSERR_UNBAL_PAREN        = 7,
-  UNITSERR_CONSEC_BINOPS      = 8,
-  UNITSERR_PARSER_ERROR       = 9,
-  UNITSERR_BAD_UNIT_SPEC      = 10,
-  UNITSERR_BAD_FUNCS          = 11,
-  UNITSERR_UNSAFE_TRANS       = 12
+  UNITSERR_SUCCESS            = 0, /* Success */
+  UNITSERR_BAD_NUM_MULTIPLIER = 1, /* Invalid numeric multiplier */
+  UNITSERR_DANGLING_BINOP     = 2, /* Dangling binary operator */
+  UNITSERR_BAD_INITIAL_SYMBOL = 3, /* Invalid symbol in INITIAL context */
+  UNITSERR_FUNCTION_CONTEXT   = 4, /* Function in invalid context */
+  UNITSERR_BAD_EXPON_SYMBOL   = 5, /* Invalid symbol in EXPON context */
+  UNITSERR_UNBAL_BRACKET      = 6, /* Unbalanced bracket */
+  UNITSERR_UNBAL_PAREN        = 7, /* Unbalanced parenthesis */
+  UNITSERR_CONSEC_BINOPS      = 8, /* Consecutive binary operators */
+  UNITSERR_PARSER_ERROR       = 9, /* Internal parser error */
+  UNITSERR_BAD_UNIT_SPEC      = 10,/* Non-conformant unit specifications */
+  UNITSERR_BAD_FUNCS          = 11,/* Non-conformant functions */
+  UNITSERR_UNSAFE_TRANS       = 12 /* Potentially unsafe translation */
 };
 
 extern const char *wcsunits_types[];
@@ -364,14 +379,11 @@ extern const char *wcsunits_units[];
 #define WCSUNITS_NTYPE      17
 
 
-/* ERRTODO: Document me */
 int wcsunits(const char have[], const char want[], double *scale,
              double *offset, double *power, struct wcserr *err);
 
-/* ERRTODO: Document me */
 int wcsutrn(int ctrl, char unitstr[], struct wcserr *err);
 
-/* ERRTODO: Document me  */
 int wcsulex(const char unitstr[], int *func, double *scale, double units[],
             struct wcserr *err);
 

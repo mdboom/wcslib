@@ -97,8 +97,6 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
 
   if (wcs == 0x0) return WCSERR_NULL_POINTER;
 
-  /* Initialize the error structure first, so we can start returning
-     errors. */
   wcserr_ini(&wcs->err);
 
   if (naxis <= 0) {
@@ -544,7 +542,7 @@ int wcssub(
 
   if ((naxis = wcssrc->naxis) <= 0) {
     return WCSERR_SET(
-      &wcs->err, WCSERR_MEMORY,
+      &wcsdst->err, WCSERR_MEMORY,
       "naxis must be positive (got %d)", naxis);
   }
 
@@ -710,7 +708,7 @@ int wcssub(
 
         if ((map[i] == 0) != (map[j] == 0)) {
           status = WCSERR_SET(
-            &wcs->err, WCSERR_NON_SEPARABLE, wcs_errmsg[WCSERR_NON_SEPARABLE]);
+            &wcsdst->err, WCSERR_NON_SEPARABLE, wcs_errmsg[WCSERR_NON_SEPARABLE]);
           goto cleanup;
         }
       }
@@ -1756,14 +1754,10 @@ int wcs_types(struct wcsprm *wcs)
             wcs->cubeface, wcs->alt, i, wcs->alt);
         }
 
-      } else {
-        if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err) == 0) {
-          /* Spectral axis. */
-          if (wcs->spec < 0) wcs->spec = i;
-          wcs->types[i] += 3000;
-        } else {
-          wcserr_ini(&wcs->err); /* Ignore any errors */
-        }
+      } else if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
+        /* Spectral axis. */
+        if (wcs->spec < 0) wcs->spec = i;
+        wcs->types[i] += 3000;
       }
 
       continue;
@@ -1771,7 +1765,7 @@ int wcs_types(struct wcsprm *wcs)
 
 
     /* CTYPEia is in "4-3" form; is it a recognized spectral type? */
-    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err) == 0) {
+    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
       /* Non-linear spectral axis found. */
       wcs->types[i] = 3300;
 
@@ -1786,8 +1780,6 @@ int wcs_types(struct wcsprm *wcs)
       wcs->spec = i;
 
       continue;
-    } else {
-      wcserr_ini(&wcs->err); /* Ignore any errors */
     }
 
 
@@ -1940,8 +1932,7 @@ int wcs_units(struct wcsprm *wcs)
       /* Spectral axis. */
       strncpy(ctype, wcs->ctype[i], 8);
       ctype[8] = '\0';
-      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, &uniterr);
-      wcserr_init(&uniterr);
+      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, 0x0);
       break;
 
     default:
@@ -2367,7 +2358,7 @@ int wcss2p(
       }
 
       if (istat) {
-        if (istat == LOGERR_BAD_WORLD || istat == SPCERR_BAD_WORLD) {
+        if (istat == LOGERR_BAD_WORLD || istat == SPCERR_BAD_SPEC) {
           status = WCSERR_BAD_WORLD;
         } else {
           status = istat + 3;
@@ -2425,7 +2416,7 @@ int wcss2p(
 cleanup:
   free(istatp);
 
-  if (status == WCSERR_BAD_WORLD) {
+  if (status == WCSERR_BAD_WORLD && wcs->err.msg[0] == 0) {
     WCSERR_SET(&wcs->err, WCSERR_BAD_WORLD, wcs_errmsg[WCSERR_BAD_WORLD]);
   }
   return status;
@@ -3100,8 +3091,7 @@ int wcssptr(
   wcs->flag = 0;
   wcs->cdelt[j] = cdelt;
   wcs->crval[j] = crval;
-  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0, &wcs->err);
-  wcserr_ini(&wcs->err);
+  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0, 0x0);
   strcpy(wcs->ctype[j], ctype);
 
   /* This keeps things tidy if the spectral axis is linear. */

@@ -102,8 +102,8 @@ int wcsfix(int ctrl, const int naxis[], struct wcsprm *wcs, int stat[])
 
 /*--------------------------------------------------------------------------*/
 
-int wcsfix_detailed(int ctrl, const int naxis[], struct wcsprm *wcs, int stat[],
-                    struct wcserr info[])
+int wcsfix2(int ctrl, const int naxis[], struct wcsprm *wcs, int stat[],
+            struct wcserr info[])
 
 {
   int status = 0, i;
@@ -603,7 +603,7 @@ int cylfix(const int naxis[], struct wcsprm *wcs)
                        stat))) {
     wcserr_copy(&wcs->err, &(wcs->cel.err));
     status = wcs->err.status = (
-      (status == PRJERR_BAD_PARAM) ? FIXERR_BAD_PARAM : FIXERR_BAD_WORLD_COORDS);
+      (status == PRJERR_BAD_PARAM) ? FIXERR_BAD_PARAM : FIXERR_NO_REF_PIX_COORD);
     return status;
   }
 
@@ -623,7 +623,7 @@ int cylfix(const int naxis[], struct wcsprm *wcs)
   if ((status = wcsp2s(wcs, 1, 0, pix[0], img[0], phi, theta, world[0],
                        stat))) {
     status = wcs->err.status = (
-      (status == WCSERR_BAD_PIX_COORDS ? FIXERR_NO_REF_PIX_COORD : status));
+      (status == WCSERR_BAD_PIX ? FIXERR_NO_REF_PIX_COORD : status));
     return status;
   }
 

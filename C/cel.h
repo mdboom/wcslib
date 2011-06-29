@@ -121,6 +121,9 @@
 *                         4: Ill-conditioned coordinate transformation
 *                            parameters.
 *
+* If the return value >= 2, a detailed error message is set in the
+* cel->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * celx2s() - Pixel-to-world celestial transformation
 * --------------------------------------------------
@@ -157,6 +160,9 @@
 *                         5: One or more of the (x,y) coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* cel->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * cels2x() - World-to-pixel celestial transformation
 * --------------------------------------------------
@@ -193,6 +199,9 @@
 *                         6: One or more of the (lng,lat) coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* cel->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * celprm struct - Celestial transformation parameters
 * ---------------------------------------------------
@@ -301,6 +310,10 @@
 *     intermediate calculations common to all elements in a vector
 *     computation.
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*
 *
 * Global variable: const char *cel_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -322,13 +335,13 @@ extern "C" {
 extern const char *cel_errmsg[];
 
 enum cel_errmsg_enum {
-  CELERR_SUCCESS         = 0,
-  CELERR_NULL_POINTER    = 1,
-  CELERR_BAD_PARAM       = 2,
-  CELERR_BAD_COORD_TRANS = 3,
-  CELERR_ILL_COORD_TRANS = 4,
-  CELERR_BAD_PIX         = 5,
-  CELERR_BAD_WORLD       = 6
+  CELERR_SUCCESS         = 0, /* Success */
+  CELERR_NULL_POINTER    = 1, /* Null celprm pointer passed */
+  CELERR_BAD_PARAM       = 2, /* Invalid projection parameters */
+  CELERR_BAD_COORD_TRANS = 3, /* Invalid coordinate transformation parameters */
+  CELERR_ILL_COORD_TRANS = 4, /* Ill-conditioned coordinated transformation parameters */
+  CELERR_BAD_PIX         = 5, /* One or more of the (x,y) coordinates were invalid */
+  CELERR_BAD_WORLD       = 6  /* One or more of the (lng,lat) coordinates were invalid */
 };
 
 struct celprm {

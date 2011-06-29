@@ -61,12 +61,8 @@ struct linprm *lin;
   int i, j;
   double *pc;
 
-  /* ERRTODO: No way to to set error message here because there's
-     nowhere to put it. */
   if (lin == 0x0) return LINERR_NULL_POINTER;
 
-  /* Initialize the error structure first, so we can start returning
-     errors. */
   wcserr_ini(&lin->err);
   
   if (naxis <= 0) {

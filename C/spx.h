@@ -151,6 +151,8 @@
 *                         2: Invalid spectral parameters.
 *                         3: Invalid spectral variable.
 *
+* If the return value >= 2, a detailed error message is set in the
+* specs->err struct.  See wcserr.h for error handling instructions.
 *
 * freqafrq(), afrqfreq(), freqener(), enerfreq(), freqwavn(), wavnfreq(),
 * freqwave(), wavefreq(), freqawav(), awavfreq(), waveawav(), awavwave(),
@@ -176,7 +178,11 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
-*
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
+*                         
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -207,6 +213,10 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -238,6 +248,10 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -389,6 +403,10 @@
 *   double dbetavelo
 *     (Returned) ... vice versa [s/m] (constant, = 1/c, always available).
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *
 * Global variable: const char *spx_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -409,11 +427,11 @@ extern "C" {
 extern const char *spx_errmsg[];
 
 enum spx_errmsg {
-  SPXERR_SUCCESS          = 0,
-  SPXERR_NULL_POINTER     = 1,
-  SPXERR_BAD_SPEC_PARAMS  = 2,
-  SPXERR_BAD_SPEC_VAR     = 3,
-  SPXERR_BAD_INSPEC_COORD = 4
+  SPXERR_SUCCESS          = 0, /* Success */
+  SPXERR_NULL_POINTER     = 1, /* Null spxprm pointer passed */
+  SPXERR_BAD_SPEC_PARAMS  = 2, /* Invalid spectral parameters */
+  SPXERR_BAD_SPEC_VAR     = 3, /* Invalid spectral variable */
+  SPXERR_BAD_INSPEC_COORD = 4  /* One or more of the inspec coordinates were invalid */
 };
 
 struct spxprm {

@@ -762,6 +762,11 @@
 *             int       Status return value:
 *                         0: Success.
 *                         1: Null wcsprm pointer passed.
+*                         2: Memory allocation failed.
+*                         3: Invalid tabular parameters.
+*
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
 *
 *
 * wcsidx() - Index alternate coordinate representations
@@ -928,6 +933,18 @@
 *             int       Status return value:
 *                         0: Success.
 *                         1: Null wcsprm pointer passed.
+*                         2: Memory allocation failed.
+*                         3: Linear transformation matrix is singular.
+*                         4: Inconsistent or unrecognized coordinate axis
+*                            types.
+*                         5: Invalid parameter value.
+*                         6: Invalid coordinate transformation parameters.
+*                         7: Ill-conditioned coordinate transformation
+*                            parameters.
+*
+* If the return value >= 2, a detailed error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+
 *
 * Notes:
 *   wcshdo() interprets the "relax" argument as a vector of flag bits to
@@ -1068,11 +1085,11 @@ extern "C" {
 extern const char *wcshdr_errmsg[];
 
 enum wcshdr_errmsg_enum {
-  WCSHDRERR_SUCCESS            = 0,
-  WCSHDRERR_NULL_POINTER       = 1,
-  WCSHDRERR_MEMORY             = 2,
-  WCSHDRERR_BAD_TABULAR_PARAMS = 3,
-  WCSHDRERR_PARSER             = 4
+  WCSHDRERR_SUCCESS            = 0, /* Success */
+  WCSHDRERR_NULL_POINTER       = 1, /* Null wcsprm pointer passed */
+  WCSHDRERR_MEMORY             = 2, /* Memory allocation failed */
+  WCSHDRERR_BAD_TABULAR_PARAMS = 3, /* Invalid tabular parameters */
+  WCSHDRERR_PARSER             = 4  /* Fatal error returned by Flex parser */
 };
 
 int wcspih(char *header, int nkeyrec, int relax, int ctrl, int *nreject,

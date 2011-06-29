@@ -46,7 +46,7 @@ void wcserr_ini(
 
 int wcserr_copy(
   struct wcserr* dst,
-  struct wcserr* src)
+  const struct wcserr* src)
 
 {
   memcpy(dst, src, sizeof(struct wcserr));

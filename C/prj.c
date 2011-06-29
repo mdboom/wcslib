@@ -100,6 +100,7 @@ const char *prj_errmsg[] = {
   "One or more of the (x,y) coordinates were invalid",
   "One or more of the (phi,theta) coordinates were invalid"};
 
+/* Some convenience macros for creating common projection errors */
 #define PRJERR_BAD_PARAM_SET(prj)                             \
   WCSERR_SET(&(prj)->err, PRJERR_BAD_PARAM,                   \
              "Invalid parameters for %s projection", (prj)->name);

@@ -128,6 +128,9 @@
 *                         2: Memory allocation failed.
 *                         3: Invalid tabular parameters.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tab->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * tabmem() - Acquire tabular memory
 * ---------------------------------
@@ -142,8 +145,12 @@
 *             int       Status return value:
 *                         0: Success.
 *                         1: Null tabprm pointer passed.
+*                         2: Memory allocation failed.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tab->err struct.  See wcserr.h for error handling instructions.
 *
+* 
 * tabcpy() - Copy routine for the tabprm struct
 * ---------------------------------------------
 * tabcpy() does a deep copy of one tabprm struct to another, using tabini() to
@@ -176,6 +183,9 @@
 *                         1: Null tabprm pointer passed.
 *                         2: Memory allocation failed.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tabdst->err struct.  See wcserr.h for error handling instructions.
+*                       
 *
 * tabfree() - Destructor for the tabprm struct
 * --------------------------------------------
@@ -229,6 +239,9 @@
 *                         1: Null tabprm pointer passed.
 *                         3: Invalid tabular parameters.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tab->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * tabx2s() - Pixel-to-world transformation
 * ----------------------------------------
@@ -262,6 +275,9 @@
 *                         4: One or more of the x coordinates were invalid,
 *                            as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tab->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * tabs2x() - World-to-pixel transformation
 * ----------------------------------------
@@ -294,6 +310,9 @@
 *                         5: One or more of the world coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* tab->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * tabprm struct - Tabular transformation parameters
 * -------------------------------------------------
@@ -441,6 +460,10 @@
 *   int m_coord
 *     (For internal use only.)
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+* 
 *
 * Global variable: const char *tab_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -461,12 +484,12 @@ extern "C" {
 extern const char *tab_errmsg[];
 
 enum tab_errmsg_enum {
-  TABERR_SUCCESS      = 0,
-  TABERR_NULL_POINTER = 1,
-  TABERR_MEMORY       = 2,
-  TABERR_BAD_PARAMS   = 3,
-  TABERR_BAD_X        = 4,
-  TABERR_BAD_WORLD    = 5
+  TABERR_SUCCESS      = 0, /* Success */
+  TABERR_NULL_POINTER = 1, /* Null tabprm pointer passed */
+  TABERR_MEMORY       = 2, /* Memory allocation failed */
+  TABERR_BAD_PARAMS   = 3, /* Invalid tabular parameters */
+  TABERR_BAD_X        = 4, /* One or more of the x coordinates were invalid */
+  TABERR_BAD_WORLD    = 5  /* One or more of the world coordinates were invalid */
 };
 
 struct tabprm {

@@ -509,8 +509,8 @@ int spcx2s(
   if (spc->spxX2P) {
     if ((statX2P = spc->spxX2P(spc->w[0], nx, sspec, sspec, spec, spec,
                                stat, &spc->err))) {
-      if (statX2P == SPCERR_BAD_SPEC_VAL) {
-        spc->err.status = status = SPCERR_BAD_X_VAL;
+      if (statX2P == SPCERR_BAD_SPEC) {
+        spc->err.status = status = SPCERR_BAD_X;
       } else {
         return statX2P;
       }
@@ -522,8 +522,8 @@ int spcx2s(
   if (spc->spxP2S) {
     if ((statP2S = spc->spxP2S(spc->w[0], nx, sspec, sspec, spec, spec,
                                stat, &spc->err))) {
-      if (statP2S == SPCERR_BAD_SPEC_VAL) {
-        spc->err.status = status = SPCERR_BAD_X_VAL;
+      if (statP2S == SPCERR_BAD_SPEC) {
+        spc->err.status = status = SPCERR_BAD_X;
       } else {
         return statP2S;
       }
@@ -564,8 +564,8 @@ int spcs2x(
   if (spc->spxS2P) {
     if ((statS2P = spc->spxS2P(spc->w[0], nspec, sspec, sx, spec, x, stat,
                                &spc->err))) {
-      if (statS2P == SPCERR_BAD_SPEC_VAL) {
-        spc->err.status = status = SPCERR_BAD_SPEC_VAL;
+      if (statS2P == SPCERR_BAD_SPEC) {
+        spc->err.status = status = SPCERR_BAD_SPEC;
       } else {
         return statS2P;
       }
@@ -587,8 +587,8 @@ int spcs2x(
   /* intermediate spectral variable to X-type spectral variable. */
   if (spc->spxP2X) {
     if ((statP2X = spc->spxP2X(spc->w[0], nspec, sx, sx, x, x, stat, &spc->err))) {
-      if (statP2X == SPCERR_BAD_SPEC_VAL) {
-        spc->err.status = status = SPCERR_BAD_SPEC_VAL;
+      if (statP2X == SPCERR_BAD_SPEC) {
+        spc->err.status = status = SPCERR_BAD_SPEC;
       } else {
         return statP2X;
       }

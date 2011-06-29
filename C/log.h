@@ -90,7 +90,10 @@
 *   stat      int[]     Status return value status for each vector element:
 *                         0: Success.
 *                         1: Invalid value of x.
-* ERRTODO: Document error parameter
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *                         
 * Function return value:
 *             int       Status return value:
@@ -121,7 +124,11 @@
 *   stat      int[]     Status return value status for each vector element:
 *                         0: Success.
 *                         1: Invalid value of logc.
-*
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
+*                         
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -148,11 +155,11 @@ extern "C" {
 extern const char *log_errmsg[];
 
 enum log_errmsg_enum {
-  LOGERR_SUCCESS         = 0,
-  LOGERR_NULL_POINTER    = 1,
-  LOGERR_BAD_LOG_REF_VAL = 2,
-  LOGERR_BAD_X           = 3,
-  LOGERR_BAD_WORLD       = 4
+  LOGERR_SUCCESS         = 0, /* Success */
+  LOGERR_NULL_POINTER    = 1, /* Null pointer passed */
+  LOGERR_BAD_LOG_REF_VAL = 2, /* Invalid log-coordinate reference value */
+  LOGERR_BAD_X           = 3, /* One or more of the x coordinates were invalid */
+  LOGERR_BAD_WORLD       = 4  /* One or more of the world coordinates were invalid */
 };
   
 int logx2s(double crval, int nx, int sx, int slogc, const double x[],

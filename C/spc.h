@@ -224,6 +224,9 @@
 *                         1: Null spcprm pointer passed.
 *                         2: Invalid spectral parameters.
 *
+* If the return value >= 2, a detailed error message is set in the
+* spc->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * spcx2s() - Transform to spectral coordinates
 * --------------------------------------------
@@ -254,7 +257,10 @@
 *                         3: One or more of the x coordinates were invalid,
 *                            as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* spc->err struct.  See wcserr.h for error handling instructions.
 *
+*                            
 * spcs2x() - Transform spectral coordinates
 * -----------------------------------------
 * spcs2x() transforms spectral world coordinates to intermediate world
@@ -285,7 +291,10 @@
 *                         4: One or more of the spec coordinates were
 *                            invalid, as indicated by the stat vector.
 *
+* If the return value >= 2, a detailed error message is set in the
+* spc->err struct.  See wcserr.h for error handling instructions.
 *
+* 
 * spctyp() - Spectral CTYPEia keyword analysis
 * --------------------------------------------
 * spctyp() checks whether a CTYPEia keyvalue is a valid spectral axis type and
@@ -339,6 +348,10 @@
 *                        Thus the rest frequency or wavelength is required for
 *                        spectral coordinate computations (i.e. between S- and
 *                        X-types) only if restreq%3 != 0.
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -388,8 +401,10 @@
 *                       point, SI units.  Multiply the CDELTia keyvalue by
 *                       this to get the pixel spacing in the X-type spectral
 *                       coordinate.
-*   ERRTODO: Document err parameter
-*                       
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *                       
 * Function return value:
 *             int       Status return value:
@@ -441,8 +456,10 @@
 *                       point, SI units.  Multiply this by the pixel spacing
 *                       in the X-type spectral coordinate to get the CDELTia
 *                       keyvalue.
-*   ERRTODO: Document error parameter
-* 
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *                       
 * Function return value:
 *             int       Status return value:
@@ -498,6 +515,10 @@
 *   cdeltS2   double*   Increment of the new S-type spectral variable at the
 *                       reference point, i.e. the new CDELTia keyvalue, SI
 *                       units.
+*   err       struct wcserr *
+*                       When the return value >= 2, this structure
+*                       will contain a detailed error message.  May be NULL
+*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -649,6 +670,10 @@
 *     spectral-to-pixel direction where the non-linear transformation is from
 *     P to X.  The argument list, SPX_ARGS, is defined in spx.h.
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *
 * Global variable: const char *spc_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -670,11 +695,11 @@ extern "C" {
 extern const char *spc_errmsg[];
 
 enum spc_errmsg_enum {
-  SPCERR_SUCCESS         = 0,
-  SPCERR_NULL_POINTER    = 1,
-  SPCERR_BAD_SPEC_PARAMS = 2,
-  SPCERR_BAD_X           = 3,
-  SPCERR_BAD_SPEC        = 4
+  SPCERR_SUCCESS         = 0, /* Success */
+  SPCERR_NULL_POINTER    = 1, /* Null spcprm pointer passed */
+  SPCERR_BAD_SPEC_PARAMS = 2, /* Invalid spectral parameters */
+  SPCERR_BAD_X           = 3, /* One or more of x coordinates were invalid */
+  SPCERR_BAD_SPEC        = 4  /* One or more of the spec coordinates were invalid */
 };
 
 struct spcprm {

@@ -149,8 +149,6 @@ struct celprm *cel;
   double u, v, x, y, z;
   struct prjprm *celprj;
 
-  /* ERRTODO: No way to to set error message here because there's
-     nowhere to put it. */
   if (cel == 0x0) return CELERR_NULL_POINTER;
 
   /* Initialize the projection driver routines. */

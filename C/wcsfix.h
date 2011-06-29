@@ -89,8 +89,8 @@
 *   EPOCH, VELREF or VSOURCEa keywords; this may be done by the FITS WCS
 *   header parser supplied with WCSLIB, refer to wcshdr.h.
 *
-* wcsfix() applies all of the corrections handled by the following specific
-* functions which may also be invoked separately:
+* wcsfix() and wcsfix2() applies all of the corrections handled by the
+* following specific functions which may also be invoked separately:
 *
 *   - cdfix(): Sets the diagonal element of the CDi_ja matrix to 1.0 if all
 *     CDi_ja keywords associated with a particular axis are omitted.
@@ -145,6 +145,45 @@
 *                         1: One or more of the translation functions
 *                            returned an error.
 *
+*                            
+* wcsfix2() - Translate a non-standard WCS struct
+* -----------------------------------------------
+* wcsfix2() is identical to wcsfix(), but collects detailed textual
+* information about the corrections made.
+*
+* Given:
+*   ctrl      int       Do potentially unsafe translations of non-standard
+*                       unit strings as described in the usage notes to
+*                       wcsutrn().
+*
+*   naxis     const int []
+*                       Image axis lengths.  If this array pointer is set to
+*                       zero then cylfix() will not be invoked.
+*
+* Given and returned:
+*   wcs       struct wcsprm*
+*                       Coordinate transformation parameters.
+*
+* Returned:
+*   stat      int [NWCSFIX]
+*                       Status returns from each of the functions.  Use the
+*                       preprocessor macros NWCSFIX to dimension this vector
+*                       and CDFIX, DATFIX, UNITFIX, CELFIX, SPCFIX and CYLFIX
+*                       to access its elements.  A status value of -2 is set
+*                       for functions that were not invoked.
+*
+*   info      struct wcserr [NWCSFIX]
+*                       Status messages from each of the functions.  Use the
+*                       preprocessor macros NWCSFIX to dimension this vector
+*                       and CDFIX, DATFIX, UNITFIX, CELFIX, SPCFIX and CYLFIX
+*                       to access its elements.
+*
+* Function return value:
+*             int       Status return value:
+*                         0: Success.
+*                         1: One or more of the translation functions
+*                            returned an error.
+*
 *
 * cdfix() - Fix erroneously omitted CDi_ja keywords
 * -------------------------------------------------
@@ -164,6 +203,9 @@
 *                         0: Success.
 *                         1: Null wcsprm pointer passed.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * datfix() - Translate DATE-OBS and derive MJD-OBS or vice versa
 * --------------------------------------------------------------
@@ -185,6 +227,9 @@
 *                         1: Null wcsprm pointer passed.
 *                         5: Invalid parameter value.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                         
 * Notes:
 *   The MJD algorithms used by datfix() are from D.A. Hatcher, 1984, QJRAS,
 *   25, 53-55, as modified by P.T. Wallace for use in SLALIB subroutines CLDJ
@@ -210,6 +255,9 @@
 *                         0: Success.
 *                         1: Null wcsprm pointer passed.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                         
 *
 * celfix() - Translate AIPS-convention celestial projection types
 * ---------------------------------------------------------------
@@ -240,6 +288,9 @@
 *                         7: Ill-conditioned coordinate transformation
 *                            parameters.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * spcfix() - Translate AIPS-convention spectral types
 * ---------------------------------------------------
@@ -266,6 +317,9 @@
 *                         7: Ill-conditioned coordinate transformation
 *                            parameters.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                            
 *
 * cylfix() - Fix malformed cylindrical projections
 * ------------------------------------------------
@@ -297,6 +351,9 @@
 *                         9: Could not determine reference pixel coordinate.
 *                        10: Could not determine reference pixel value.
 *
+* If the return value >= 2, a error message is set in the
+* wcs->err struct.  See wcserr.h for error handling instructions.
+*                        
 *
 * Global variable: const char *wcsfix_errmsg[] - Status return messages
 * ---------------------------------------------------------------------
@@ -326,25 +383,24 @@ extern const char *wcsfix_errmsg[];
 #define cylfix_errmsg wcsfix_errmsg
 
 enum wcsfix_errmsg_enum {
-  FIXERR_NO_CHANGE        = -1,
-  FIXERR_SUCCESS          = 0,
-  FIXERR_NULL_POINTER     = 1,
-  FIXERR_MEMORY           = 2,
-  FIXERR_SINGULAR_MTX     = 3,
-  FIXERR_BAD_CTYPE        = 4,
-  FIXERR_BAD_PARAM        = 5,
-  FIXERR_BAD_COORD_TRANS  = 6,
-  FIXERR_ILL_COORD_TRANS  = 7,
-  FIXERR_BAD_CORNER_PIX   = 8,
-  FIXERR_BAD_WORLD_COORDS = 9,
-  FIXERR_NO_REF_PIX_COORD = 10,
-  FIXERR_NO_REF_PIX_VAL   = 11,
+  FIXERR_NO_CHANGE        = -1, /* No change */
+  FIXERR_SUCCESS          = 0,  /* Success */
+  FIXERR_NULL_POINTER     = 1,  /* Null wcsprm pointer passed */
+  FIXERR_MEMORY           = 2,  /* Memory allocation failed */
+  FIXERR_SINGULAR_MTX     = 3,  /* Linear transformation matrix is singular */
+  FIXERR_BAD_CTYPE        = 4,  /* Inconsistent or unrecognized coordinate axis types */
+  FIXERR_BAD_PARAM        = 5,  /* Invalid parameter value */
+  FIXERR_BAD_COORD_TRANS  = 6,  /* Invalid coordinate transformation parameters */
+  FIXERR_ILL_COORD_TRANS  = 7,  /* Ill-conditioned coordinate transformation parameters */
+  FIXERR_BAD_CORNER_PIX   = 8,  /* All of the corner pixel coordinates are invalid */
+  FIXERR_NO_REF_PIX_COORD = 9,  /* Could not determine reference pixel coordinate */
+  FIXERR_NO_REF_PIX_VAL   = 10  /* Could not determine reference pixel value */
 };
 
 int wcsfix(int ctrl, const int naxis[], struct wcsprm *wcs, int stat[]);
 
-int wcsfix_detailed(int ctrl, const int naxis[], struct wcsprm *wcs,
-                    int stat[], struct wcserr info[]);
+int wcsfix2(int ctrl, const int naxis[], struct wcsprm *wcs,
+            int stat[], struct wcserr info[]);
   
 int cdfix(struct wcsprm *wcs);
 

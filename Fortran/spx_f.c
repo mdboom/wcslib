@@ -66,7 +66,7 @@ int specx_(
     const double spec1[], \
     double spec2[], \
     int stat[]) \
-  {return scode(*rest, *n1, *s1, *s2, spec1, spec2, stat);}
+  {return scode(*rest, *n1, *s1, *s2, spec1, spec2, stat, NULL);}
 
 SPX_FWRAP(freqafrq, FREQAFRQ)
 SPX_FWRAP(afrqfreq, AFRQFREQ)
