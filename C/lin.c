@@ -47,9 +47,6 @@ const char *lin_errmsg[] = {
   "Memory allocation failed",
   "PCi_ja matrix is singular"};
 
-static int matinv_err(
-  int n, const double mat[], double inv[], struct wcserr *err);
-
 /*--------------------------------------------------------------------------*/
 
 int linini(alloc, naxis, lin)
@@ -441,8 +438,8 @@ struct linprm *lin;
     }
 
     /* Compute the image-to-pixel transformation matrix. */
-    if ((status = matinv_err(n, lin->piximg, lin->imgpix, &lin->err))) {
-      return status;
+    if ((status = matinv(n, lin->piximg, lin->imgpix))) {
+      return WCSERR_SET(&lin->err, status, lin_errmsg[status]);
     }
   }
 
@@ -577,8 +574,7 @@ double pixcrd[];
 
 /*--------------------------------------------------------------------------*/
 
-static int matinv_err(int n, const double mat[], double inv[],
-                      struct wcserr *err)
+static int matinv_err(int n, const double mat[], double inv[])
 
 {
   register int i, ij, ik, j, k, kj, pj;
@@ -588,24 +584,24 @@ static int matinv_err(int n, const double mat[], double inv[],
 
   /* Allocate memory for internal arrays. */
   if (!(mxl = calloc(n, sizeof(int)))) {
-    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+    return LINERR_MEMORY;
   }
   if (!(lxm = calloc(n, sizeof(int)))) {
     free(mxl);
-    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+    return LINERR_MEMORY;
   }
 
   if (!(rowmax = calloc(n, sizeof(double)))) {
     free(mxl);
     free(lxm);
-    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+    return LINERR_MEMORY;
   }
 
   if (!(lu = calloc(n*n, sizeof(double)))) {
     free(mxl);
     free(lxm);
     free(rowmax);
-    return WCSERR_SET(err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+    return LINERR_MEMORY;
   }
 
 
@@ -629,7 +625,7 @@ static int matinv_err(int n, const double mat[], double inv[],
       free(lxm);
       free(rowmax);
       free(lu);
-      return WCSERR_SET(err, LINERR_SINGULAR_MTX, lin_errmsg[LINERR_SINGULAR_MTX]);
+      return LINERR_SINGULAR_MTX;
     }
   }
 
@@ -725,15 +721,5 @@ static int matinv_err(int n, const double mat[], double inv[],
    free(lu);
 
    return 0;
-}
-
-int matinv(n, mat, inv)
-
-int n;
-const double mat[];
-double inv[];
-
-{
-  return matinv_err(n, mat, inv, NULL);
 }
 
