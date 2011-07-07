@@ -49,8 +49,8 @@
 *     }
 *
 *     
-* wcserr struct
-* -------------
+* wcserr struct - Error message handling
+* --------------------------------------
 * The wcserr struct contains the numeric error code, a textual
 * description of the error, and information about the source of the
 * error.
@@ -109,7 +109,7 @@
 * convenience, consider using the WCSERR_SET macro which will fill in
 * the source file and line number information automatically.
 *
-* Given/returned:
+* Given and returned:
 *   err       struct wcserr*
 *                       The destination error object.  If err is NULL,
 *                       the function will return without setting an
