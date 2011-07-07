@@ -30,8 +30,6 @@ wcslib.pc
 C/fitshdr.c
 C/wcsbth.c
 C/wcspih.c
-C/wcsulex.c
-C/wcsutrn.c
 html
 
 doxygen/latex

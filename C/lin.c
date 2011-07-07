@@ -574,7 +574,7 @@ double pixcrd[];
 
 /*--------------------------------------------------------------------------*/
 
-static int matinv_err(int n, const double mat[], double inv[])
+int matinv(int n, const double mat[], double inv[])
 
 {
   register int i, ij, ik, j, k, kj, pj;
