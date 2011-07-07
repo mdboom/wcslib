@@ -2137,18 +2137,21 @@ int wcsp2s(
         /* Spectral coordinates. */
         istat = spcx2s(&(wcs->spc), nx, nelem, nelem, imgcrd+i, world+i,
                        istatp);
-
+        if (istat == SPCERR_BAD_X) {
+          status = WCSERR_BAD_PIX;
+        } else if (istat) {
+          wcserr_copy(&wcs->err, &wcs->spc.err);
+          wcs->err.status = status = istat + 3;
+          goto cleanup;
+        }
       } else if (type == 4) {
         /* Logarithmic coordinates. */
         istat = logx2s(wcs->crval[i], nx, nelem, nelem, imgcrd+i, world+i,
-                       istatp, &wcs->err);
-      }
-
-      if (istat) {
-        if (istat == LOGERR_BAD_X || istat == SPCERR_BAD_X) {
+                       istatp);
+        if (istat == LOGERR_BAD_X) {
           status = WCSERR_BAD_PIX;
-        } else {
-          status = istat + 3;
+        } else if (istat == LOGERR_BAD_LOG_REF_VAL) {
+          status = WCSERR_SET(&wcs->err, WCSERR_BAD_PARAM, log_errmsg[istat]);
           goto cleanup;
         }
       }
@@ -2350,18 +2353,21 @@ int wcss2p(
         /* Spectral coordinates. */
         istat = spcs2x(&(wcs->spc), nwrld, nelem, nelem, world+i,
                        imgcrd+i, istatp);
-
+        if (istat == SPCERR_BAD_SPEC) {
+          status = WCSERR_BAD_WORLD;
+        } else if (istat) {
+          wcserr_copy(&wcs->err, &wcs->spc.err);
+          wcs->err.status = status = istat + 3;
+          goto cleanup;
+        }
       } else if (type == 4) {
         /* Logarithmic coordinates. */
         istat = logs2x(wcs->crval[i], nwrld, nelem, nelem, world+i,
-                       imgcrd+i, istatp, &wcs->err);
-      }
-
-      if (istat) {
-        if (istat == LOGERR_BAD_WORLD || istat == SPCERR_BAD_SPEC) {
+                       imgcrd+i, istatp);
+        if (istat == LOGERR_BAD_WORLD) {
           status = WCSERR_BAD_WORLD;
-        } else {
-          status = istat + 3;
+        } else if (istat == LOGERR_BAD_LOG_REF_VAL) {
+          status = WCSERR_SET(&wcs->err, WCSERR_BAD_PARAM, log_errmsg[istat]);
           goto cleanup;
         }
       }

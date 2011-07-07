@@ -90,10 +90,6 @@
 *   stat      int[]     Status return value status for each vector element:
 *                         0: Success.
 *                         1: Invalid value of x.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *                         
 * Function return value:
 *             int       Status return value:
@@ -124,10 +120,6 @@
 *   stat      int[]     Status return value status for each vector element:
 *                         0: Success.
 *                         1: Invalid value of logc.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *                         
 * Function return value:
 *             int       Status return value:
@@ -150,8 +142,6 @@
 extern "C" {
 #endif
 
-#include "wcserr.h"
-
 extern const char *log_errmsg[];
 
 enum log_errmsg_enum {
@@ -163,10 +153,10 @@ enum log_errmsg_enum {
 };
   
 int logx2s(double crval, int nx, int sx, int slogc, const double x[],
-           double logc[], int stat[], struct wcserr *err);
+           double logc[], int stat[]);
 
 int logs2x(double crval, int nlogc, int slogc, int sx, const double logc[],
-           double x[], int stat[], struct wcserr *err);
+           double x[], int stat[]);
 
 
 #ifdef __cplusplus
