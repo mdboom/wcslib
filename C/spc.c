@@ -554,9 +554,9 @@ int spcs2x(
 
 
   /* Initialize. */
-  if (spc == 0x0) return 1;
+  if (spc == 0x0) return SPCERR_NULL_POINTER;
   if (spc->flag == 0) {
-    if (spcset(spc)) return 2;
+    if (status = spcset(spc)) return status;
   }
 
   /* Apply the linear step of the algorithm chain to convert the S-type */
