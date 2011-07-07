@@ -305,6 +305,10 @@
 * valid spectral type; zero-pointers may be specified for any that are not of
 * interest.
 *
+* An alternate form of this function, spctyp_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+*
 * Given:
 *   ctype     const char[9]
 *                       The CTYPEia keyvalue, (eight characters with null
@@ -365,6 +369,10 @@
 * spcspx() analyses the CTYPEia and CRVALia FITS spectral axis keyword values
 * and returns information about the associated X-type spectral variable.
 *
+* An alternate form of this function, spcspx_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   ctypeS    const char[9]
 *                       Spectral axis type, i.e. the CTYPEia keyvalue, (eight
@@ -401,10 +409,6 @@
 *                       point, SI units.  Multiply the CDELTia keyvalue by
 *                       this to get the pixel spacing in the X-type spectral
 *                       coordinate.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *                       
 * Function return value:
 *             int       Status return value:
@@ -420,6 +424,10 @@
 * may be used to compute CDELTia.  See above for an explanation of the S-,
 * P-, and X-type spectral variables.
 *
+* An alternate form of this function, spcxps_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   ctypeS    const char[9]
 *                       The required spectral axis type, i.e. the CTYPEia
@@ -456,10 +464,6 @@
 *                       point, SI units.  Multiply this by the pixel spacing
 *                       in the X-type spectral coordinate to get the CDELTia
 *                       keyvalue.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *                       
 * Function return value:
 *             int       Status return value:
@@ -473,6 +477,10 @@
 * corresponding set for the specified spectral axis type.  For example, a
 * 'FREQ' axis may be translated into 'ZOPT-F2W' and vice versa.
 *
+* An alternate form of this function, spctrn_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   ctypeS1   const char[9]
 *                       Spectral axis type, i.e. the CTYPEia keyvalue, (eight
@@ -515,10 +523,6 @@
 *   cdeltS2   double*   Increment of the new S-type spectral variable at the
 *                       reference point, i.e. the new CDELTia keyvalue, SI
 *                       units.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -768,21 +772,36 @@ int spcs2x(struct spcprm *spc, int nspec, int sspec, int sx,
            const double spec[], double x[], int stat[]);
 
 int spctyp(const char ctype[], char stype[], char scode[], char sname[],
-           char units[], char *ptype, char *xtype, int *restreq,
-           struct wcserr *err);
+           char units[], char *ptype, char *xtype, int *restreq);
 
+int spctyp_err(const char ctype[], char stype[], char scode[], char sname[],
+               char units[], char *ptype, char *xtype, int *restreq,
+               struct wcserr *err);
+  
 int spcspx(const char ctypeS[], double crvalS, double restfrq, double restwav,
            char *ptype, char *xtype, int *restreq, double *crvalX,
-           double *dXdS, struct wcserr *err);
+           double *dXdS);
 
+int spcspx_err(const char ctypeS[], double crvalS, double restfrq, double restwav,
+               char *ptype, char *xtype, int *restreq, double *crvalX,
+               double *dXdS, struct wcserr *err);
+  
 int spcxps(const char ctypeS[], double crvalX, double restfrq, double restwav,
            char *ptype, char *xtype, int *restreq, double *crvalS,
-           double *dSdX, struct wcserr *err);
+           double *dSdX);
 
+int spcxps_err(const char ctypeS[], double crvalX, double restfrq, double restwav,
+               char *ptype, char *xtype, int *restreq, double *crvalS,
+               double *dSdX, struct wcserr *err);
+  
 int spctrn(const char ctypeS1[], double crvalS1, double cdeltS1,
            double restfrq, double restwav, char ctypeS2[], double *crvalS2,
-           double *cdeltS2, struct wcserr *err);
+           double *cdeltS2);
 
+int spctrn_err(const char ctypeS1[], double crvalS1, double cdeltS1,
+               double restfrq, double restwav, char ctypeS2[], double *crvalS2,
+               double *cdeltS2, struct wcserr *err);
+  
 int spcaips(const char ctypeA[], int velref, char ctype[], char specsys[]);
 
 

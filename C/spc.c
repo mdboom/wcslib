@@ -206,8 +206,8 @@ int spcset(struct spcprm *spc)
   sprintf(ctype, "%s-%s", spc->type, spc->code);
   restfrq = spc->restfrq;
   restwav = spc->restwav;
-  if ((status = spcspx(ctype, spc->crval, restfrq, restwav, &ptype, &xtype,
-                       &restreq, &crvalX, &dXdS, &spc->err))) {
+  if ((status = spcspx_err(ctype, spc->crval, restfrq, restwav, &ptype, &xtype,
+                           &restreq, &crvalX, &dXdS, &spc->err))) {
     return status;
   }
 
@@ -657,6 +657,21 @@ int spctyp(
   char units[],
   char *ptype,
   char *xtype,
+  int  *restreq)
+
+{
+  return spctyp_err(
+    ctypei, stype, scode, sname, units, ptype, xtype, restreq, NULL);
+}
+
+int spctyp_err(
+  const char ctypei[9],
+  char stype[],
+  char scode[],
+  char sname[],
+  char units[],
+  char *ptype,
+  char *xtype,
   int  *restreq,
   struct wcserr *err)
 
@@ -824,6 +839,22 @@ int spcspx(
   char *xtype,
   int *restreq,
   double *crvalX,
+  double *dXdS)
+
+{
+  return spcspx_err(
+    ctypeS, crvalS, restfrq, restwav, ptype, xtype, restreq, crvalX, dXdS, NULL);
+}
+
+int spcspx_err(
+  const char ctypeS[9],
+  double crvalS,
+  double restfrq,
+  double restwav,
+  char *ptype,
+  char *xtype,
+  int *restreq,
+  double *crvalX,
   double *dXdS,
   struct wcserr *err)
 
@@ -834,7 +865,8 @@ int spcspx(
   struct spxprm spx;
 
   /* Analyse the spectral axis code. */
-  if (status = spctyp(ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
+  if (status = spctyp_err(
+        ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
     return status;
   }
 
@@ -971,6 +1003,22 @@ int spcxps(
   char *xtype,
   int *restreq,
   double *crvalS,
+  double *dSdX)
+
+{
+  return spcxps_err(
+    ctypeS, crvalX, restfrq, restwav, ptype, xtype, restreq, crvalS, dSdX, NULL);
+}
+
+int spcxps_err(
+  const char ctypeS[9],
+  double crvalX,
+  double restfrq,
+  double restwav,
+  char *ptype,
+  char *xtype,
+  int *restreq,
+  double *crvalS,
   double *dSdX,
   struct wcserr *err)
 
@@ -981,7 +1029,8 @@ int spcxps(
   struct spxprm spx;
 
   /* Analyse the spectral axis type. */
-  if (status = spctyp(ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
+  if (status = spctyp_err(
+        ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
     return status;
   }
 
@@ -1121,6 +1170,21 @@ int spctrn(
   double restwav,
   char   ctypeS2[9],
   double *crvalS2,
+  double *cdeltS2)
+
+{
+  return spctrn_err(
+    ctypeS1, crvalS1, cdeltS1, restfrq, restwav, ctypeS2, crvalS2, cdeltS2, NULL);
+}
+
+int spctrn_err(
+  const char ctypeS1[9],
+  double crvalS1,
+  double cdeltS1,
+  double restfrq,
+  double restwav,
+  char   ctypeS2[9],
+  double *crvalS2,
   double *cdeltS2,
   struct wcserr *err)
 
@@ -1129,8 +1193,8 @@ int spctrn(
   int  restreq, status;
   double crvalX, dS2dX, dXdS1;
 
-  if ((status = spcspx(ctypeS1, crvalS1, restfrq, restwav, &ptype1, &xtype1,
-                       &restreq, &crvalX, &dXdS1, err))) {
+  if ((status = spcspx_err(ctypeS1, crvalS1, restfrq, restwav, &ptype1,
+                           &xtype1, &restreq, &crvalX, &dXdS1, err))) {
     return status;
   }
 
@@ -1151,8 +1215,8 @@ int spctrn(
     }
   }
 
-  if ((status = spcxps(ctypeS2, crvalX, restfrq, restwav, &ptype2, &xtype2,
-                       &restreq, crvalS2, &dS2dX, err))) {
+  if ((status = spcxps_err(ctypeS2, crvalX, restfrq, restwav, &ptype2, &xtype2,
+                           &restreq, crvalS2, &dS2dX, err))) {
     return status;
   }
 

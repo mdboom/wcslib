@@ -1540,7 +1540,8 @@ int wcsset(struct wcsprm *wcs)
   if (wcs->spec >= 0 && wcs->types[wcs->spec] == 3300) {
     spcini(wcsspc);
     if ((status =
-         spctyp(wcs->ctype[wcs->spec], stype, scode, 0x0, 0x0, 0x0, 0x0, 0x0, &wcs->err))) {
+         spctyp_err(wcs->ctype[wcs->spec], stype, scode, 0x0, 0x0, 0x0, 0x0,
+                    0x0, &wcs->err))) {
       return status;
     }
     strcpy(wcsspc->type, stype);
@@ -1754,7 +1755,7 @@ int wcs_types(struct wcsprm *wcs)
             wcs->cubeface, wcs->alt, i, wcs->alt);
         }
 
-      } else if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
+      } else if (spctyp(ctypei, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
         /* Spectral axis. */
         if (wcs->spec < 0) wcs->spec = i;
         wcs->types[i] += 3000;
@@ -1765,7 +1766,7 @@ int wcs_types(struct wcsprm *wcs)
 
 
     /* CTYPEia is in "4-3" form; is it a recognized spectral type? */
-    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
+    if (spctyp(ctypei, 0x0, scode, 0x0, 0x0, 0x0, 0x0, 0x0) == 0) {
       /* Non-linear spectral axis found. */
       wcs->types[i] = 3300;
 
@@ -1932,7 +1933,7 @@ int wcs_units(struct wcsprm *wcs)
       /* Spectral axis. */
       strncpy(ctype, wcs->ctype[i], 8);
       ctype[8] = '\0';
-      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0, 0x0);
+      spctyp(ctype, 0x0, 0x0, 0x0, units, 0x0, 0x0, 0x0);
       break;
 
     default:
@@ -3085,9 +3086,9 @@ int wcssptr(
   }
 
   /* Translate the spectral axis. */
-  if ((status = spctrn(wcs->ctype[j], wcs->crval[j], wcs->cdelt[j],
-                       wcs->restfrq, wcs->restwav, ctype, &crval, &cdelt,
-                       &wcs->err))) {
+  if ((status = spctrn_err(wcs->ctype[j], wcs->crval[j], wcs->cdelt[j],
+                           wcs->restfrq, wcs->restwav, ctype, &crval, &cdelt,
+                           &wcs->err))) {
     wcs->err.status = WCSERR_BAD_COORD_TRANS;
     return WCSERR_BAD_COORD_TRANS;
   }
@@ -3097,7 +3098,7 @@ int wcssptr(
   wcs->flag = 0;
   wcs->cdelt[j] = cdelt;
   wcs->crval[j] = crval;
-  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0, 0x0);
+  spctyp(ctype, 0x0, 0x0, 0x0, wcs->cunit[j], 0x0, 0x0, 0x0);
   strcpy(wcs->ctype[j], ctype);
 
   /* This keeps things tidy if the spectral axis is linear. */
