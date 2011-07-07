@@ -50,7 +50,7 @@ int logx2s_(
   int stat[])
 
 {
-  return logx2s(*crval, *nx, *sx, *slogc, x, logc, stat, 0x0);
+  return logx2s(*crval, *nx, *sx, *slogc, x, logc, stat);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -65,5 +65,5 @@ int logs2x_(
   int stat[])
 
 {
-  return logs2x(*crval, *nlogc, *slogc, *sx, logc, x, stat, 0x0);
+  return logs2x(*crval, *nlogc, *slogc, *sx, logc, x, stat);
 }

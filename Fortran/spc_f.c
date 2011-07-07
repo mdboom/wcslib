@@ -277,8 +277,7 @@ int spctyp_(
   strncpy(ctypei_, ctypei, 8);
   ctypei_[8] = '\0';
 
-  status = spctyp(ctypei_, stype_, scode_, sname_, units_, ptype, xtype,
-                  restreq, NULL);
+  status = spctyp(ctypei_, stype_, scode_, sname_, units_, ptype, xtype, restreq);
 
   wcsutil_blank_fill( 5, stype_);
   wcsutil_blank_fill( 4, scode_);
@@ -312,7 +311,7 @@ int spcspx_(
   ctypeS_[8] = '\0';
 
   return spcspx(ctypeS_, *crvalS, *restfrq, *restwav, ptype, xtype, restreq,
-                crvalX, dXdS, NULL);
+                crvalX, dXdS);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -334,7 +333,7 @@ int spcxps_(
   ctypeS_[8] = '\0';
 
   return spcxps(ctypeS_, *crvalX, *restfrq, *restwav, ptype, xtype, restreq,
-                crvalS, dSdX, NULL);
+                crvalS, dSdX);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -357,7 +356,7 @@ int spctrn_(
   ctypeS1_[8] = '\0';
 
   status = spctrn(ctypeS1_, *crvalS1, *cdeltS1, *restfrq, *restwav,
-                  ctypeS2_,  crvalS2,  cdeltS2, NULL);
+                  ctypeS2_,  crvalS2,  cdeltS2);
 
   wcsutil_blank_fill(9, ctypeS2_);
   strncpy(ctypeS2, ctypeS2_, 8);

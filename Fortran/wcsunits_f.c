@@ -59,7 +59,7 @@ int wcsunits_(
   have_[71] = '\0';
   want_[71] = '\0';
 
-  return wcsunits(have_, want_, scale, offset, power, NULL);
+  return wcsunits(have_, want_, scale, offset, power);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -75,7 +75,7 @@ int wcsutrn_(
   strncpy(unitstr_, unitstr, 72);
   unitstr_[71] = '\0';
 
-  status = wcsutrn(*ctrl, unitstr_, NULL);
+  status = wcsutrn(*ctrl, unitstr_);
 
   wcsutil_blank_fill(72, unitstr_);
   strncpy(unitstr, unitstr_, 72);
@@ -97,5 +97,5 @@ int wcsulex_(
   strncpy(unitstr_, unitstr, 72);
   unitstr_[71] = '\0';
 
-  return wcsulex(unitstr_, func, scale, units, NULL);
+  return wcsulex(unitstr_, func, scale, units);
 }
