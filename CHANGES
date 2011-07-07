@@ -4,44 +4,18 @@
     fill in a detailed error message to a wcserr struct attached to
     the passed-in *prm struct.  See wcserr.h for more information.
   
-    Functions that didn't have a *prm struct as an argument now have
-    an additional wcserr argument at the end to receive any error
-    messages.  The functions with an additional argument are:
+    Functions that didn't have a *prm struct as an argument have no
+    direct way to return an error message.  Therefore, these functions
+    now have duplicate versions with the suffix "_err" that take an
+    additional "struct wcserr *" parameter.  These functions are:
                
-        afrqfreq()
-        awavfreq()
-        awavvelo()
-        awavwave()
-        betavelo()
-        enerfreq()
-        freqafrq()
-        freqawav()
-        freqener()
-        freqvelo()
-        freqvrad()
-        freqwave()    
-        logx2s()
-        logs2x()
         spcspx()
         spctrn()
         spctyp()
         spcxps()
-        veloawav()
-        velobeta()
-        velofreq()
-        velowave()
-        voptwave()
-        vradfreq()
-        waveawav()
-        wavefreq()
-        wavevelo()
-        wavevopt()
-        wavezopt()
-        wavnfreq()
         wcsulex()
         wcsunits()
         wcsutrn()
-        zoptwave()
 
     A new function wcsfix2() was added which is identical to wcsfix()
     but in addition stores all of the detailed textual messages about
