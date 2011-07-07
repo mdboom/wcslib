@@ -336,14 +336,13 @@ struct spxprm *spx;
 *   Conversions between frequency and vacuum wavelength.
 *===========================================================================*/
 
-int freqwave(dummy, nfreq, sfreq, swave, freq, wave, stat, err)
+int freqwave(dummy, nfreq, sfreq, swave, freq, wave, stat)
 
 double dummy;
 int nfreq, sfreq, swave;
 const double freq[];
 double wave[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -367,22 +366,18 @@ struct wcserr *err;
     wavep += swave;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
 /*--------------------------------------------------------------------------*/
 
-int wavefreq(dummy, nwave, swave, sfreq, wave, freq, stat, err)
+int wavefreq(dummy, nwave, swave, sfreq, wave, freq, stat)
 
 double dummy;
 int nwave, swave, sfreq;
 const double wave[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -406,9 +401,6 @@ struct wcserr *err;
     freqp += sfreq;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
@@ -416,58 +408,55 @@ struct wcserr *err;
 *   Conversions between frequency and air wavelength.
 *===========================================================================*/
 
-int freqawav(dummy, nfreq, sfreq, sawav, freq, awav, stat, err)
+int freqawav(dummy, nfreq, sfreq, sawav, freq, awav, stat)
 
 double dummy;
 int nfreq, sfreq, sawav;
 const double freq[];
 double awav[];
 int stat[];
-struct wcserr *err;
 
 {
   int status;
 
-  if ((status = freqwave(dummy, nfreq, sfreq, sawav, freq, awav, stat, err))) {
+  if ((status = freqwave(dummy, nfreq, sfreq, sawav, freq, awav, stat))) {
     return status;
   }
 
-  return waveawav(dummy, nfreq, sawav, sawav, awav, awav, stat, err);
+  return waveawav(dummy, nfreq, sawav, sawav, awav, awav, stat);
 }
 
 /*--------------------------------------------------------------------------*/
 
-int awavfreq(dummy, nawav, sawav, sfreq, awav, freq, stat, err)
+int awavfreq(dummy, nawav, sawav, sfreq, awav, freq, stat)
 
 double dummy;
 int nawav, sawav, sfreq;
 const double awav[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   int status;
 
-  if ((status = awavwave(dummy, nawav, sawav, sfreq, awav, freq, stat, err))) {
+  if ((status = awavwave(dummy, nawav, sawav, sfreq, awav, freq, stat))) {
     return status;
   }
 
-  return wavefreq(dummy, nawav, sfreq, sfreq, freq, freq, stat, err);
+  return wavefreq(dummy, nawav, sfreq, sfreq, freq, freq, stat);
 }
 
 /*============================================================================
 *   Conversions between frequency and relativistic velocity.
 *===========================================================================*/
 
-int freqvelo(restfrq, nfreq, sfreq, svelo, freq, velo, stat, err)
+int freqvelo(restfrq, nfreq, sfreq, svelo, freq, velo, stat)
 
 double restfrq;
 int nfreq, sfreq, svelo;
 const double freq[];
 double velo[];
 int stat[];
-struct wcserr *err;
 
 {
   double r, s;
@@ -494,14 +483,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int velofreq(restfrq, nvelo, svelo, sfreq, velo, freq, stat, err)
+int velofreq(restfrq, nvelo, svelo, sfreq, velo, freq, stat)
 
 double restfrq;
 int nvelo, svelo, sfreq;
 const double velo[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -527,9 +515,6 @@ struct wcserr *err;
     freqp += sfreq;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
@@ -537,14 +522,13 @@ struct wcserr *err;
 *   Conversions between vacuum wavelength and air wavelength.
 *===========================================================================*/
 
-int waveawav(dummy, nwave, swave, sawav, wave, awav, stat, err)
+int waveawav(dummy, nwave, swave, sawav, wave, awav, stat)
 
 double dummy;
 int nwave, swave, sawav;
 const double wave[];
 double awav[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -578,22 +562,18 @@ struct wcserr *err;
     awavp += sawav;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
 /*--------------------------------------------------------------------------*/
 
-int awavwave(dummy, nawav, sawav, swave, awav, wave, stat, err)
+int awavwave(dummy, nawav, sawav, swave, awav, wave, stat)
 
 double dummy;
 int nawav, sawav, swave;
 const double awav[];
 double wave[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -623,9 +603,6 @@ struct wcserr *err;
     wavep += swave;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
@@ -633,14 +610,13 @@ struct wcserr *err;
 *   Conversions between vacuum wavelength and relativistic velocity.
 *===========================================================================*/
 
-int wavevelo(restwav, nwave, swave, svelo, wave, velo, stat, err)
+int wavevelo(restwav, nwave, swave, svelo, wave, velo, stat)
 
 double restwav;
 int nwave, swave, svelo;
 const double wave[];
 double velo[];
 int stat[];
-struct wcserr *err;
 
 {
   double r, s;
@@ -667,14 +643,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int velowave(restwav, nvelo, svelo, swave, velo, wave, stat, err)
+int velowave(restwav, nvelo, svelo, swave, velo, wave, stat)
 
 double restwav;
 int nvelo, svelo, swave;
 const double velo[];
 double wave[];
 int stat[];
-struct wcserr *err;
 
 {
   int status = 0;
@@ -700,9 +675,6 @@ struct wcserr *err;
     wavep += swave;
   }
 
-  if (status == SPXERR_BAD_INSPEC_COORD) {
-    SPXERR_SET(err, status);
-  }
   return status;
 }
 
@@ -710,58 +682,55 @@ struct wcserr *err;
 *   Conversions between air wavelength and relativistic velocity.
 *===========================================================================*/
 
-int awavvelo(dummy, nawav, sawav, svelo, awav, velo, stat, err)
+int awavvelo(dummy, nawav, sawav, svelo, awav, velo, stat)
 
 double dummy;
 int nawav, sawav, svelo;
 const double awav[];
 double velo[];
 int stat[];
-struct wcserr *err;
 
 {
   int status;
 
-  if ((status = awavwave(dummy, nawav, sawav, svelo, awav, velo, stat, err))) {
+  if ((status = awavwave(dummy, nawav, sawav, svelo, awav, velo, stat))) {
     return status;
   }
 
-  return wavevelo(dummy, nawav, svelo, svelo, velo, velo, stat, err);
+  return wavevelo(dummy, nawav, svelo, svelo, velo, velo, stat);
 }
 
 /*--------------------------------------------------------------------------*/
 
-int veloawav(dummy, nvelo, svelo, sawav, velo, awav, stat, err)
+int veloawav(dummy, nvelo, svelo, sawav, velo, awav, stat)
 
 double dummy;
 int nvelo, svelo, sawav;
 const double velo[];
 double awav[];
 int stat[];
-struct wcserr *err;
 
 {
   int status;
 
-  if ((status = velowave(dummy, nvelo, svelo, sawav, velo, awav, stat, err))) {
+  if ((status = velowave(dummy, nvelo, svelo, sawav, velo, awav, stat))) {
     return status;
   }
 
-  return waveawav(dummy, nvelo, sawav, sawav, awav, awav, stat, err);
+  return waveawav(dummy, nvelo, sawav, sawav, awav, awav, stat);
 }
 
 /*============================================================================
 *   Conversions between frequency and angular frequency.
 *===========================================================================*/
 
-int freqafrq(dummy, nfreq, sfreq, safrq, freq, afrq, stat, err)
+int freqafrq(dummy, nfreq, sfreq, safrq, freq, afrq, stat)
 
 double dummy;
 int nfreq, sfreq, safrq;
 const double freq[];
 double afrq[];
 int stat[];
-struct wcserr *err;
 
 {
   register int ifreq, *statp;
@@ -784,14 +753,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int afrqfreq(dummy, nafrq, safrq, sfreq, afrq, freq, stat, err)
+int afrqfreq(dummy, nafrq, safrq, sfreq, afrq, freq, stat)
 
 double dummy;
 int nafrq, safrq, sfreq;
 const double afrq[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   register int iafrq, *statp;
@@ -816,14 +784,13 @@ struct wcserr *err;
 *   Conversions between frequency and energy.
 *===========================================================================*/
 
-int freqener(dummy, nfreq, sfreq, sener, freq, ener, stat, err)
+int freqener(dummy, nfreq, sfreq, sener, freq, ener, stat)
 
 double dummy;
 int nfreq, sfreq, sener;
 const double freq[];
 double ener[];
 int stat[];
-struct wcserr *err;
 
 {
   register int ifreq, *statp;
@@ -846,14 +813,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int enerfreq(dummy, nener, sener, sfreq, ener, freq, stat, err)
+int enerfreq(dummy, nener, sener, sfreq, ener, freq, stat)
 
 double dummy;
 int nener, sener, sfreq;
 const double ener[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   register int iener, *statp;
@@ -878,14 +844,13 @@ struct wcserr *err;
 *   Conversions between frequency and wave number.
 *===========================================================================*/
 
-int freqwavn(dummy, nfreq, sfreq, swavn, freq, wavn, stat, err)
+int freqwavn(dummy, nfreq, sfreq, swavn, freq, wavn, stat)
 
 double dummy;
 int nfreq, sfreq, swavn;
 const double freq[];
 double wavn[];
 int stat[];
-struct wcserr *err;
 
 {
   register int ifreq, *statp;
@@ -908,14 +873,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int wavnfreq(dummy, nwavn, swavn, sfreq, wavn, freq, stat, err)
+int wavnfreq(dummy, nwavn, swavn, sfreq, wavn, freq, stat)
 
 double dummy;
 int nwavn, swavn, sfreq;
 const double wavn[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   register int iwavn, *statp;
@@ -940,14 +904,13 @@ struct wcserr *err;
 *   Conversions between frequency and radio velocity.
 *===========================================================================*/
 
-int freqvrad(restfrq, nfreq, sfreq, svrad, freq, vrad, stat, err)
+int freqvrad(restfrq, nfreq, sfreq, svrad, freq, vrad, stat)
 
 double restfrq;
 int nfreq, sfreq, svrad;
 const double freq[];
 double vrad[];
 int stat[];
-struct wcserr *err;
 
 {
   double r;
@@ -956,9 +919,7 @@ struct wcserr *err;
   register double *vradp;
 
   if (restfrq == 0.0) {
-    return WCSERR_SET(
-      err, SPXERR_BAD_SPEC_PARAMS,
-      "Invalid spectral parameters: frequency == 0.0");
+    return SPXERR_BAD_SPEC_PARAMS;
   }
   r = C/restfrq;
 
@@ -978,14 +939,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int vradfreq(restfrq, nvrad, svrad, sfreq, vrad, freq, stat, err)
+int vradfreq(restfrq, nvrad, svrad, sfreq, vrad, freq, stat)
 
 double restfrq;
 int nvrad, svrad, sfreq;
 const double vrad[];
 double freq[];
 int stat[];
-struct wcserr *err;
 
 {
   double r;
@@ -1012,14 +972,13 @@ struct wcserr *err;
 *   Conversions between vacuum wavelength and optical velocity.
 *===========================================================================*/
 
-int wavevopt(restwav, nwave, swave, svopt, wave, vopt, stat, err)
+int wavevopt(restwav, nwave, swave, svopt, wave, vopt, stat)
 
 double restwav;
 int nwave, swave, svopt;
 const double wave[];
 double vopt[];
 int stat[];
-struct wcserr *err;
 
 {
   double r;
@@ -1028,9 +987,7 @@ struct wcserr *err;
   register double *voptp;
 
   if (restwav == 0.0) {
-    return WCSERR_SET(
-      err, SPXERR_BAD_SPEC_PARAMS,
-      "Invalid spectral parameters: wavelength == 0.0");
+    return SPXERR_BAD_SPEC_PARAMS;
   }
   r = C/restwav;
 
@@ -1049,14 +1006,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int voptwave(restwav, nvopt, svopt, swave, vopt, wave, stat, err)
+int voptwave(restwav, nvopt, svopt, swave, vopt, wave, stat)
 
 double restwav;
 int nvopt, svopt, swave;
 const double vopt[];
 double wave[];
 int stat[];
-struct wcserr *err;
 
 {
   double r;
@@ -1083,14 +1039,13 @@ struct wcserr *err;
 *   Conversions between vacuum wavelength and redshift.
 *===========================================================================*/
 
-int wavezopt(restwav, nwave, swave, szopt, wave, zopt, stat, err)
+int wavezopt(restwav, nwave, swave, szopt, wave, zopt, stat)
 
 double restwav;
 int nwave, swave, szopt;
 const double wave[];
 double zopt[];
 int stat[];
-struct wcserr *err;
 
 {
   double r;
@@ -1099,9 +1054,7 @@ struct wcserr *err;
   register double *zoptp;
 
   if (restwav == 0.0) {
-    return WCSERR_SET(
-      err, SPXERR_BAD_SPEC_PARAMS,
-      "Invalid spectral parameters: wavelength == 0.0");
+    return SPXERR_BAD_SPEC_PARAMS;
   }
   r = 1.0/restwav;
 
@@ -1120,14 +1073,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int zoptwave(restwav, nzopt, szopt, swave, zopt, wave, stat, err)
+int zoptwave(restwav, nzopt, szopt, swave, zopt, wave, stat)
 
 double restwav;
 int nzopt, szopt, swave;
 const double zopt[];
 double wave[];
 int stat[];
-struct wcserr *err;
 
 {
   register int izopt, *statp;
@@ -1151,14 +1103,13 @@ struct wcserr *err;
 *   Conversions between relativistic velocity and beta (= v/c).
 *===========================================================================*/
 
-int velobeta(dummy, nvelo, svelo, sbeta, velo, beta, stat, err)
+int velobeta(dummy, nvelo, svelo, sbeta, velo, beta, stat)
 
 double dummy;
 int nvelo, svelo, sbeta;
 const double velo[];
 double beta[];
 int stat[];
-struct wcserr *err;
 
 {
   register int ivelo, *statp;
@@ -1181,14 +1132,13 @@ struct wcserr *err;
 
 /*--------------------------------------------------------------------------*/
 
-int betavelo(dummy, nbeta, sbeta, svelo, beta, velo, stat, err)
+int betavelo(dummy, nbeta, sbeta, svelo, beta, velo, stat)
 
 double dummy;
 int nbeta, sbeta, svelo;
 const double beta[];
 double velo[];
 int stat[];
-struct wcserr *err;
 
 {
   register int ibeta, *statp;

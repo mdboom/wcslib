@@ -508,11 +508,15 @@ int spcx2s(
   /* X-type spectral variable to P-type intermediate spectral variable. */
   if (spc->spxX2P) {
     if ((statX2P = spc->spxX2P(spc->w[0], nx, sspec, sspec, spec, spec,
-                               stat, &spc->err))) {
-      if (statX2P == SPCERR_BAD_SPEC) {
-        spc->err.status = status = SPCERR_BAD_X;
+                               stat))) {
+      if (statX2P == SPXERR_BAD_INSPEC_COORD) {
+        status = SPCERR_BAD_X;
+      } else if (statX2P == SPXERR_BAD_SPEC_PARAMS) {
+        return WCSERR_SET(
+          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+          "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return statX2P;
+        return WCSERR_SET(&spc->err, statX2P, spc_errmsg[statX2P]);
       }
     }
   }
@@ -521,15 +525,22 @@ int spcx2s(
   /* intermediate spectral variable to the required S-type variable. */
   if (spc->spxP2S) {
     if ((statP2S = spc->spxP2S(spc->w[0], nx, sspec, sspec, spec, spec,
-                               stat, &spc->err))) {
-      if (statP2S == SPCERR_BAD_SPEC) {
-        spc->err.status = status = SPCERR_BAD_X;
+                               stat))) {
+      if (statP2S == SPXERR_BAD_INSPEC_COORD) {
+        status = SPCERR_BAD_X;
+      } else if (statP2S == SPXERR_BAD_SPEC_PARAMS) {
+        return WCSERR_SET(
+          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+          "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return statP2S;
+        return WCSERR_SET(&spc->err, statP2S, spc_errmsg[statP2S]);
       }
     }
   }
 
+  if (status = SPCERR_BAD_X) {
+    WCSERR_SET(&spc->err, SPCERR_BAD_X, spc_errmsg[SPCERR_BAD_X]);
+  }
   return status;
 }
 
@@ -562,12 +573,15 @@ int spcs2x(
   /* Apply the linear step of the algorithm chain to convert the S-type */
   /* spectral variable to P-type intermediate spectral variable.        */
   if (spc->spxS2P) {
-    if ((statS2P = spc->spxS2P(spc->w[0], nspec, sspec, sx, spec, x, stat,
-                               &spc->err))) {
-      if (statS2P == SPCERR_BAD_SPEC) {
-        spc->err.status = status = SPCERR_BAD_SPEC;
+    if ((statS2P = spc->spxS2P(spc->w[0], nspec, sspec, sx, spec, x, stat))) {
+      if (statS2P == SPXERR_BAD_INSPEC_COORD) {
+        status = SPCERR_BAD_SPEC;
+      } else if (statS2P == SPXERR_BAD_SPEC_PARAMS) {
+        return WCSERR_SET(
+          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+          "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return statS2P;
+        return WCSERR_SET(&spc->err, statS2P, spc_errmsg[statS2P]);
       }
     }
 
@@ -586,11 +600,15 @@ int spcs2x(
   /* Apply the non-linear step of the algorithm chain to convert P-type */
   /* intermediate spectral variable to X-type spectral variable. */
   if (spc->spxP2X) {
-    if ((statP2X = spc->spxP2X(spc->w[0], nspec, sx, sx, x, x, stat, &spc->err))) {
+    if ((statP2X = spc->spxP2X(spc->w[0], nspec, sx, sx, x, x, stat))) {
       if (statP2X == SPCERR_BAD_SPEC) {
-        spc->err.status = status = SPCERR_BAD_SPEC;
+        status = SPCERR_BAD_SPEC;
+      } else if (statP2X == SPXERR_BAD_SPEC_PARAMS) {
+        return WCSERR_SET(
+          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+          "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return statP2X;
+        return WCSERR_SET(&spc->err, statP2X, spc_errmsg[statP2X]);
       }
     }
   }
@@ -623,6 +641,9 @@ int spcs2x(
     *xp /= spc->w[2];
   }
 
+  if (status == SPCERR_BAD_SPEC) {
+    WCSERR_SET(&spc->err, SPCERR_BAD_SPEC, spc_errmsg[SPCERR_BAD_SPEC]);
+  }
   return status;
 }
 

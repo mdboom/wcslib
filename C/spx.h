@@ -178,10 +178,6 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *                         
 * Function return value:
 *             int       Status return value:
@@ -213,10 +209,6 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -248,10 +240,6 @@
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of inspec.
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
 *
 * Function return value:
 *             int       Status return value:
@@ -485,8 +473,7 @@ int specx(const char *type, double spec, double restfrq, double restwav,
 
 /* For use in declaring function prototypes, e.g. in spcprm. */
 #define SPX_ARGS double param, int nspec, int instep, int outstep, \
-    const double inspec[], double outspec[], int stat[], \
-    struct wcserr *err                                   \
+    const double inspec[], double outspec[], int stat[]
 
 int freqafrq(SPX_ARGS);
 int afrqfreq(SPX_ARGS);
