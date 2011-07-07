@@ -481,6 +481,10 @@
 *     (Returned) ... the offset in y used to force (x,y) = (0,0) at
 *     (phi_0,theta_0).
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *   double w[10]
 *     (Returned) Intermediate floating-point values derived from the
 *     projection parameters, cached here to save recomputation.
@@ -500,10 +504,6 @@
 *   int (*prjs2x)(PRJ_ARGS)
 *     (Returned) ... and deprojection routines.
 *
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
-*     
 *
 * Global variable: const char *prj_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -583,15 +583,18 @@ struct prjprm {
   int    divergent;		/* Does the projection diverge in latitude? */
   double x0, y0;		/* Fiducial offsets.                        */
 
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
+  
+  /* Private                                                                */
+  /*------------------------------------------------------------------------*/
   double w[10];			/* Intermediate values.                     */
   int    m, n;			/* Intermediate values.                     */
 
   int (*prjx2s)(PRJX2S_ARGS);	/* Pointers to the spherical projection and */
   int (*prjs2x)(PRJS2X_ARGS);	/* deprojection functions.                  */
 
-  /* Error handling                                                         */
-  /*------------------------------------------------------------------------*/
-  struct wcserr err;
 };
 
 /* Size of the prjprm struct in int units, used by the Fortran wrappers. */

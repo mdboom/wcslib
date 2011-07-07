@@ -1116,6 +1116,10 @@
 *     (Returned) Spectral transformation parameters (usage is described in the
 *     prologue to spc.h).
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *   int m_flag
 *     (For internal use only.)
 *   int m_naxis
@@ -1153,10 +1157,6 @@
 *   struct wtbarr *m_wtb
 *     (For internal use only.)
 *
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
-*     
 *
 * pscard struct - Store for PSi_ma keyrecords
 * -------------------------------------------
@@ -1407,6 +1407,12 @@ struct wcsprm {
   struct celprm cel;		/* Celestial transformation parameters.     */
   struct spcprm spc;		/* Spectral  transformation parameters.     */
 
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
+
+  /* Private                                                                */
+  /*------------------------------------------------------------------------*/
   int    m_flag, m_naxis;	/* The remainder are for memory management. */
   double *m_crpix, *m_pc, *m_cdelt, *m_crval;
   char  (*m_cunit)[72], (*m_ctype)[72];
@@ -1418,10 +1424,6 @@ struct wcsprm {
   double *m_crder, *m_csyer;
   struct tabprm *m_tab;
   struct wtbarr *m_wtb;
-
-  /* Error handling                                                         */
-  /*------------------------------------------------------------------------*/
-  struct wcserr err;
 };
 
 /* Size of the wcsprm struct in int units, used by the Fortran wrappers. */

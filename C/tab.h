@@ -439,6 +439,10 @@
 *     compressed K_1 dimension, then the maximum.  This array is used by the
 *     inverse table lookup function, tabs2x(), to speed up table searches.
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *   int m_flag
 *     (For internal use only.)
 *   int m_M
@@ -460,10 +464,6 @@
 *   int m_coord
 *     (For internal use only.)
 *
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
-* 
 *
 * Global variable: const char *tab_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -528,14 +528,17 @@ struct tabprm {
   double *extrema;		/* (1+M)-dimensional array of coordinate    */
 				/* extrema.                                 */
 
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
+
+  /* Private                                                                */
+  /*------------------------------------------------------------------------*/
   int    m_flag, m_M, m_N;	/* The remainder are for memory management. */
   int    set_M;
   int    *m_K, *m_map;
   double *m_crval, **m_index, **m_indxs, *m_coord;
 
-  /* Error handling                                                         */
-  /*------------------------------------------------------------------------*/
-  struct wcserr err;
 };
 
 /* Size of the tabprm struct in int units, used by the Fortran wrappers. */

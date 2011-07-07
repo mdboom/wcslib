@@ -330,6 +330,10 @@
 *     (Returned) Pointer to the first element of the inverse of the
 *     linprm::piximg matrix.
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *   int i_naxis
 *     (For internal use only.)
 *   int m_flag
@@ -342,10 +346,6 @@
 *     (For internal use only.)
 *   double *m_cdelt
 *     (For internal use only.)
-*
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
 *     
 *
 * Global variable: const char *lin_errmsg[] - Status return messages
@@ -391,13 +391,16 @@ struct linprm {
   double *imgpix;		/* Inverse of the piximg matrix.            */
   int unity;			/* True if the PCi_ja matrix is unity.      */
 
-  int i_naxis;			/* The remainder are for memory management. */
-  int m_flag, m_naxis;
-  double *m_crpix, *m_pc, *m_cdelt;
-
   /* Error handling                                                         */
   /*------------------------------------------------------------------------*/
   struct wcserr err;
+
+  /* Private                                                                */
+  /*------------------------------------------------------------------------*/
+  /* The remainder are for memory management. */
+  int i_naxis;			
+  int m_flag, m_naxis;
+  double *m_crpix, *m_pc, *m_cdelt;
 };
 
 /* Size of the linprm struct in int units, used by the Fortran wrappers. */

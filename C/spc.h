@@ -654,6 +654,10 @@
 *   int padding
 *     (An unused variable inserted for alignment purposes only.)
 *
+*   struct wcserr err
+*     (Returned) When an error status is returned, this
+*     structure contains detailed information about the error.
+*     
 *   int (*spxX2P)(SPX_ARGS)
 *     (Returned) The first and ...
 *   int (*spxP2S)(SPX_ARGS)
@@ -670,10 +674,6 @@
 *     spectral-to-pixel direction where the non-linear transformation is from
 *     P to X.  The argument list, SPX_ARGS, is defined in spx.h.
 *
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
-*     
 *
 * Global variable: const char *spc_errmsg[] - Status return messages
 * ------------------------------------------------------------------
@@ -736,6 +736,12 @@ struct spcprm {
   int isGrism;			/* Grism coordinates?  1: vacuum, 2: air.   */
   int padding;			/* (Dummy inserted for alignment purposes.) */
 
+  /* Error handling                                                         */
+  /*------------------------------------------------------------------------*/
+  struct wcserr err;
+  
+  /* Private                                                                */
+  /*------------------------------------------------------------------------*/
   int (*spxX2P)(SPX_ARGS);	/* Pointers to the transformation functions */
   int (*spxP2S)(SPX_ARGS);	/* in the two-step algorithm chain in the   */
 				/* pixel-to-spectral direction.             */
@@ -743,10 +749,6 @@ struct spcprm {
   int (*spxS2P)(SPX_ARGS);	/* Pointers to the transformation functions */
   int (*spxP2X)(SPX_ARGS);	/* in the two-step algorithm chain in the   */
 				/* spectral-to-pixel direction.             */
-
-  /* Error handling                                                         */
-  /*------------------------------------------------------------------------*/
-  struct wcserr err;
 };
 
 /* Size of the spcprm struct in int units, used by the Fortran wrappers. */
