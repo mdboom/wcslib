@@ -64,7 +64,7 @@
 #include "wcserr.h"
 #include "wcsunits.h"
 
-#define YY_DECL int wcsutrn(int ctrl, char unitstr[], struct wcserr *err)
+#define YY_DECL int wcsutrn_err(int ctrl, char unitstr[], struct wcserr *err)
 
 /* Used in preempting the call to exit() by yy_fatal_error(). */
 jmp_buf wcsutrn_abort_jmp_env;

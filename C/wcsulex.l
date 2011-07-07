@@ -103,8 +103,8 @@ ADD_UNIT  {ADD_ALL}|{ADD_SUP}|{ADD_SUB}|{ADD_NONE}
 #include "wcsmath.h"
 #include "wcsunits.h"
 
-#define YY_DECL int wcsulex(const char unitstr[], int *func, double *scale, \
-                            double units[], struct wcserr* err)
+#define YY_DECL int wcsulex_err(const char unitstr[], int *func, double *scale, \
+                                double units[], struct wcserr* err)
 
 /* Used in preempting the call to exit() by yy_fatal_error(). */
 jmp_buf wcsulex_abort_jmp_env;
@@ -271,7 +271,7 @@ sqrt" "*"(" {
             yytext[yyleng-1] = '\0';
 
             buf = YY_CURRENT_BUFFER;
-            status = wcsulex(yytext+1, &func_r, &factor_r, types, err);
+            status = wcsulex_err(yytext+1, &func_r, &factor_r, types, err);
             yy_switch_to_buffer(buf);
 
             if (func_r) {

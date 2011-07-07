@@ -95,6 +95,18 @@ int wcsunits(
   const char want[],
   double *scale,
   double *offset,
+  double *power)
+
+{
+  return wcsunits_err(
+    have, want, scale, offset, power, 0x0);
+}
+
+int wcsunits_err(
+  const char have[],
+  const char want[],
+  double *scale,
+  double *offset,
   double *power,
   struct wcserr *err)
 
@@ -102,11 +114,11 @@ int wcsunits(
   int    func1, func2, i, status;
   double scale1, scale2, units1[WCSUNITS_NTYPE], units2[WCSUNITS_NTYPE];
 
-  if ((status = wcsulex(have, &func1, &scale1, units1, err))) {
+  if ((status = wcsulex_err(have, &func1, &scale1, units1, err))) {
     return status;
   }
 
-  if ((status = wcsulex(want, &func2, &scale2, units2, err))) {
+  if ((status = wcsulex_err(want, &func2, &scale2, units2, err))) {
     return status;
   }
 
@@ -194,4 +206,16 @@ int wcsunits(
     err, UNITSERR_BAD_FUNCS,
     "Mismatched unit functions: have '%s' (%s), want '%s' (%s)",
     have, wcsunits_funcs[func1], want, wcsunits_funcs[func2]);
+}
+
+int wcsutrn(int ctrl, char unitstr[])
+
+{
+  return wcsutrn_err(ctrl, unitstr, 0x0);
+}
+
+int wcsulex(const char unitstr[], int *func, double *scale, double units[])
+
+{
+  return wcsulex_err(unitstr, func, scale, units, 0x0);
 }

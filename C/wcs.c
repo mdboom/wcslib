@@ -1947,7 +1947,7 @@ int wcs_units(struct wcsprm *wcs)
 
     wcsutil_null_fill(72, wcs->cunit[i]);
     if (wcs->cunit[i][0]) {
-      if (wcsunits(wcs->cunit[i], units, &scale, &offset, &power, &uniterr)) {
+      if (wcsunits_err(wcs->cunit[i], units, &scale, &offset, &power, &uniterr)) {
         return WCSERR_SET(
           &wcs->err, WCSERR_BAD_COORD_TRANS,
           "In CUNIT%d%s: %s", i, wcs->alt, uniterr.msg);

@@ -69,6 +69,10 @@
 * ------------------------------------------------
 * wcsunits() derives the conversion from one system of units to another.
 *
+* An alternate form of this function, wcsunits_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   have      const char []
 *                       FITS units specification to convert from (null-
@@ -97,11 +101,6 @@
 *
 =                         value *= scale;
 *
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
-*
 * Function return value:
 *             int       Status return value:
 *                          0: Success.
@@ -119,6 +118,10 @@
 * the notes below for a full list.  Compounds are also recognized, e.g.
 * "JY/BEAM" and "KM/SEC/SEC".  Extraneous embedded blanks are removed.
 *
+* An alternate form of this function, wcsutrn_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   ctrl      int       Although "S" is commonly used to represent seconds,
 *                       its translation to "s" is potentially unsafe since the
@@ -143,11 +146,6 @@
 *                       will be stripped off, but text following the closing
 *                       bracket will be preserved without modification.
 *                       
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
-*
 * Function return value:
 *             int       Status return value:
 *                        -1: No change was made, other than stripping blanks
@@ -203,6 +201,10 @@
 * units - basically SI with degrees and "dimensionless" additions such as
 * byte, pixel and count.
 *
+* An alternate form of this function, wcsulex_err(), has an additional
+* wcserr* parameter for retrieving detailed error messages.  See
+* wcserr.h for more information.
+* 
 * Given:
 *   unitstr   const char []
 *                       Null-terminated character array containing the units
@@ -233,11 +235,6 @@
 *                       wcsunits_units[], are predefined to describe each
 *                       quantity and its canonical units.
 *                       
-*   err       struct wcserr *
-*                       When the return value >= 2, this structure
-*                       will contain a detailed error message.  May be NULL
-*                       if an error message is not desired.
-*
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
@@ -380,13 +377,20 @@ extern const char *wcsunits_units[];
 
 
 int wcsunits(const char have[], const char want[], double *scale,
-             double *offset, double *power, struct wcserr *err);
+             double *offset, double *power);
 
-int wcsutrn(int ctrl, char unitstr[], struct wcserr *err);
+int wcsunits_err(const char have[], const char want[], double *scale,
+                 double *offset, double *power, struct wcserr *err);
+  
+int wcsutrn(int ctrl, char unitstr[]);
 
-int wcsulex(const char unitstr[], int *func, double *scale, double units[],
-            struct wcserr *err);
+int wcsutrn_err(int ctrl, char unitstr[], struct wcserr *err);
+  
+int wcsulex(const char unitstr[], int *func, double *scale, double units[]);
 
+int wcsulex_err(const char unitstr[], int *func, double *scale, double units[],
+                struct wcserr *err);
+  
 #ifdef __cplusplus
 }
 #endif

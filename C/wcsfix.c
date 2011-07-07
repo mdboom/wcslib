@@ -368,7 +368,7 @@ int unitfix(int ctrl, struct wcsprm *wcs)
   if (wcs == 0x0) return FIXERR_NULL_POINTER;
 
   for (i = 0; i < wcs->naxis; i++) {
-    if (wcsutrn(ctrl, wcs->cunit[i], &wcs->err) == 0) {
+    if (wcsutrn_err(ctrl, wcs->cunit[i], &wcs->err) == 0) {
       status = FIXERR_SUCCESS;
     }
   }
