@@ -538,7 +538,7 @@ int spcx2s(
     }
   }
 
-  if (status = SPCERR_BAD_X) {
+  if (status == SPCERR_BAD_X) {
     WCSERR_SET(&spc->err, SPCERR_BAD_X, spc_errmsg[SPCERR_BAD_X]);
   }
   return status;
