@@ -1827,7 +1827,7 @@ int stat[];
     }
   }
 
-  if (status = PRJERR_BAD_WORLD) {
+  if (status == PRJERR_BAD_WORLD) {
     PRJERR_BAD_WORLD_SET(prj);
   }
   return status;
