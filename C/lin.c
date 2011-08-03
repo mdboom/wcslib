@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: lin.c,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: lin.c,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
 *===========================================================================*/
 
 #include <stdio.h>
@@ -47,6 +47,9 @@ const char *lin_errmsg[] = {
   "Memory allocation failed",
   "PCi_ja matrix is singular"};
 
+/* Convenience macro for invoking wcserr_set(). */
+#define LIN_ERRMSG(status) WCSERR_SET(status), lin_errmsg[status]
+
 /*--------------------------------------------------------------------------*/
 
 int linini(alloc, naxis, lin)
@@ -55,25 +58,35 @@ int alloc, naxis;
 struct linprm *lin;
 
 {
+  static const char *function = "linini";
+
   int i, j;
   double *pc;
+  struct wcserr **err;
 
   if (lin == 0x0) return LINERR_NULL_POINTER;
 
-  wcserr_ini(&lin->err);
-  
-  if (naxis <= 0) {
-    return WCSERR_SET(
-      &lin->err, LINERR_MEMORY,
-      "naxis must be positive (got %d)", naxis);
+  /* Initialize error message handling. */
+  err = &(lin->err);
+  if (lin->flag != -1) {
+    if (lin->err) free(lin->err);
   }
+  lin->err = 0x0;
 
+
+  /* Initialize memory management. */
   if (lin->flag == -1 || lin->m_flag != LINSET) {
     lin->m_flag  = 0;
     lin->m_naxis = 0x0;
     lin->m_crpix = 0x0;
     lin->m_pc    = 0x0;
     lin->m_cdelt = 0x0;
+  }
+
+
+  if (naxis <= 0) {
+    return wcserr_set(WCSERR_SET(LINERR_MEMORY),
+      "naxis must be positive (got %d)", naxis);
   }
 
 
@@ -96,7 +109,7 @@ struct linprm *lin;
 
       } else {
         if (!(lin->crpix = calloc(naxis, sizeof(double)))) {
-          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+          return wcserr_set(LIN_ERRMSG(LINERR_MEMORY));
         }
 
         lin->m_flag  = LINSET;
@@ -113,7 +126,7 @@ struct linprm *lin;
       } else {
         if (!(lin->pc = calloc(naxis*naxis, sizeof(double)))) {
           linfree(lin);
-          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+          return wcserr_set(LIN_ERRMSG(LINERR_MEMORY));
         }
 
         lin->m_flag  = LINSET;
@@ -130,7 +143,7 @@ struct linprm *lin;
       } else {
         if (!(lin->cdelt = calloc(naxis, sizeof(double)))) {
           linfree(lin);
-          return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+          return wcserr_set(LIN_ERRMSG(LINERR_MEMORY));
         }
 
         lin->m_flag  = LINSET;
@@ -149,7 +162,6 @@ struct linprm *lin;
   lin->piximg = 0x0;
   lin->imgpix = 0x0;
   lin->i_naxis = 0x0;
-
 
   lin->flag  = 0;
   lin->naxis = naxis;
@@ -193,16 +205,20 @@ const struct linprm *linsrc;
 struct linprm *lindst;
 
 {
+  static const char *function = "lincpy";
+
   int i, j, naxis, status;
   const double *srcp;
   double *dstp;
+  struct wcserr **err;
 
   if (linsrc == 0x0) return LINERR_NULL_POINTER;
+  if (lindst == 0x0) return LINERR_NULL_POINTER;
+  err = &(lindst->err);
 
   naxis = linsrc->naxis;
   if (naxis <= 0) {
-    return WCSERR_SET(
-      &lindst->err, LINERR_MEMORY,
+    return wcserr_set(WCSERR_SET(LINERR_MEMORY),
       "naxis must be positive (got %d)", naxis);
   }
 
@@ -272,6 +288,9 @@ struct linprm *lin;
   lin->imgpix = 0x0;
   lin->i_naxis = 0;
 
+  if (lin->err) free(lin->err);
+  lin->err = 0x0;
+
   lin->flag = 0;
 
   return 0;
@@ -321,6 +340,11 @@ const struct linprm *lin;
 
   wcsprintf("      unity: %d\n", lin->unity);
 
+  wcsprintf("        err: %p\n", (void *)lin->err);
+  if (lin->err) {
+    wcserr_prt(lin->err, "");
+  }
+
   if (lin->piximg == 0x0) {
     wcsprintf("     piximg: (nil)\n");
   } else {
@@ -369,10 +393,14 @@ int linset(lin)
 struct linprm *lin;
 
 {
+  static const char *function = "linset";
+
   int i, j, n, status;
   double *pc, *piximg;
+  struct wcserr **err;
 
   if (lin == 0x0) return LINERR_NULL_POINTER;
+  err = &(lin->err);
 
   n = lin->naxis;
 
@@ -417,12 +445,12 @@ struct linprm *lin;
 
       /* Allocate memory for internal arrays. */
       if (!(lin->piximg = calloc(n*n, sizeof(double)))) {
-        return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+        return wcserr_set(LIN_ERRMSG(LINERR_MEMORY));
       }
 
       if (!(lin->imgpix = calloc(n*n, sizeof(double)))) {
         free(lin->piximg);
-        return WCSERR_SET(&lin->err, LINERR_MEMORY, lin_errmsg[LINERR_MEMORY]);
+        return wcserr_set(LIN_ERRMSG(LINERR_MEMORY));
       }
 
       lin->i_naxis = n;
@@ -439,7 +467,7 @@ struct linprm *lin;
 
     /* Compute the image-to-pixel transformation matrix. */
     if ((status = matinv(n, lin->piximg, lin->imgpix))) {
-      return WCSERR_SET(&lin->err, status, lin_errmsg[status]);
+      return wcserr_set(LIN_ERRMSG(status));
     }
   }
 
@@ -722,4 +750,3 @@ int matinv(int n, const double mat[], double inv[])
 
    return 0;
 }
-

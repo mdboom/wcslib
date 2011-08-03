@@ -28,7 +28,7 @@
 *
 * Author: Mark Calabretta, Australia Telescope National Facility
 * http://www.atnf.csiro.au/~mcalabre/index.html
-* $Id: fitshdr_data.f,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+* $Id: fitshdr_data.f,v 4.7.1.1 2011/02/07 07:04:23 cal103 Exp cal103 $
 *=======================================================================
 
       BLOCK DATA FITSHDR_BLOCK_DATA

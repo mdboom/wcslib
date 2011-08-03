@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: prj.h,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: prj.h,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
 *=============================================================================
 *
 * WCSLIB 4.7 - C routines that implement the spherical map projections
@@ -154,7 +154,8 @@
 *
 * prjprt() - Print routine for the prjprm struct
 * ----------------------------------------------
-* prjprt() prints the contents of a prjprm struct.
+* prjprt() prints the contents of a prjprm struct using wcsprintf().  Mainly
+* intended for diagnostic purposes.
 *
 * Given:
 *   prj       const struct prjprm*
@@ -192,9 +193,9 @@
 *                         1: Null prjprm pointer passed.
 *                         2: Invalid projection parameters.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
-*                         
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
+*
 *
 * prjx2s() - Generic Cartesian-to-spherical deprojection
 * ------------------------------------------------------
@@ -209,13 +210,16 @@
 *
 * Given:
 *   nx,ny     int       Vector lengths.
+*
 *   sxy,spt   int       Vector strides.
+*
 *   x,y       const double[]
 *                       Projected coordinates.
 *
 * Returned:
 *   phi,theta double[]  Longitude and latitude (phi,theta) of the projected
 *                       point in native spherical coordinates [deg].
+*
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of (x,y).
@@ -228,8 +232,8 @@
 *                         3: One or more of the (x,y) coordinates were
 *                            invalid, as indicated by the stat vector.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
 *
 *
 * prjs2x() - Generic spherical-to-Cartesian projection
@@ -246,13 +250,16 @@
 * Given:
 *   nphi,
 *   ntheta    int       Vector lengths.
+*
 *   spt,sxy   int       Vector strides.
+*
 *   phi,theta const double[]
 *                       Longitude and latitude (phi,theta) of the projected
 *                       point in native spherical coordinates [deg].
 *
 * Returned:
 *   x,y       double[]  Projected coordinates.
+*
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of (phi,theta).
@@ -265,9 +272,9 @@
 *                         4: One or more of the (phi,theta) coordinates
 *                            were, invalid, as indicated by the stat vector.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
-*                            
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
+*
 *
 * ???set() - Specific setup routines for the prjprm struct
 * --------------------------------------------------------
@@ -284,9 +291,9 @@
 *                         1: Null prjprm pointer passed.
 *                         2: Invalid projection parameters.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
-*                         
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
+*
 *
 * ???x2s() - Specific Cartesian-to-spherical deprojection routines
 * ----------------------------------------------------------------
@@ -299,13 +306,16 @@
 *
 * Given:
 *   nx,ny     int       Vector lengths.
+*
 *   sxy,spt   int       Vector strides.
+*
 *   x,y       const double[]
 *                       Projected coordinates.
 *
 * Returned:
 *   phi,theta double[]  Longitude and latitude of the projected point in
 *                       native spherical coordinates [deg].
+*
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of (x,y).
@@ -318,9 +328,9 @@
 *                         3: One or more of the (x,y) coordinates were
 *                            invalid, as indicated by the stat vector.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
-*                            
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
+*
 *
 * ???s2x() - Specific spherical-to-Cartesian projection routines
 *---------------------------------------------------------------
@@ -334,13 +344,16 @@
 * Given:
 *   nphi,
 *   ntheta    int       Vector lengths.
+*
 *   spt,sxy   int       Vector strides.
+*
 *   phi,theta const double[]
 *                       Longitude and latitude of the projected point in
 *                       native spherical coordinates [deg].
 *
 * Returned:
 *   x,y       double[]  Projected coordinates.
+*
 *   stat      int[]     Status return value for each vector element:
 *                         0: Success.
 *                         1: Invalid value of (phi,theta).
@@ -353,10 +366,10 @@
 *                         4: One or more of the (phi,theta) coordinates
 *                            were, invalid, as indicated by the stat vector.
 *
-* If the return value >= 2, a detailed error message is set in the
-* prj->err struct.  See wcserr.h for error handling instructions.
+*                       For returns > 1, a detailed error message is set in
+*                       prjprm::err.
 *
-*                            
+*
 * prjprm struct - Projection parameters
 * -------------------------------------
 * The prjprm struct contains all information needed to project or deproject
@@ -481,10 +494,10 @@
 *     (Returned) ... the offset in y used to force (x,y) = (0,0) at
 *     (phi_0,theta_0).
 *
-*   struct wcserr err
-*     (Returned) When an error status is returned, this
-*     structure contains detailed information about the error.
-*     
+*   struct wcserr *err
+*     (Returned) When an error status is returned, this struct contains
+*     detailed information about the error.
+*
 *   double w[10]
 *     (Returned) Intermediate floating-point values derived from the
 *     projection parameters, cached here to save recomputation.
@@ -495,9 +508,6 @@
 *   int n
 *     (Returned) Intermediate integer value (used only for the ZPN and HPX
 *     projections).
-*
-*   int padding
-*     (An unused variable inserted for alignment purposes only.)
 *
 *   int (*prjx2s)(PRJX2S_ARGS)
 *     (Returned) Pointer to the projection ...
@@ -527,13 +537,15 @@ extern "C" {
 extern const char *prj_errmsg[];
 
 enum prj_errmsg_enum {
-  PRJERR_SUCCESS      = 0, /* Success */
-  PRJERR_NULL_POINTER = 1, /* Null prjprm pointer passed */
-  PRJERR_BAD_PARAM    = 2, /* Invalid projection parameters */
-  PRJERR_BAD_PIX      = 3, /* One or more of the (x, y) coordinates were invalid */
-  PRJERR_BAD_WORLD    = 4  /* One or more of the (phi, theta) coordinates were invalid */
+  PRJERR_SUCCESS      = 0,	/* Success. */
+  PRJERR_NULL_POINTER = 1,	/* Null prjprm pointer passed. */
+  PRJERR_BAD_PARAM    = 2,	/* Invalid projection parameters. */
+  PRJERR_BAD_PIX      = 3,	/* One or more of the (x, y) coordinates were
+				   invalid. */
+  PRJERR_BAD_WORLD    = 4	/* One or more of the (phi, theta) coordinates
+				   were invalid. */
 };
-  
+
 extern const int CONIC, CONVENTIONAL, CYLINDRICAL, POLYCONIC,
                  PSEUDOCYLINDRICAL, QUADCUBE, ZENITHAL, HEALPIX;
 extern const char prj_categories[9][32];
@@ -585,8 +597,8 @@ struct prjprm {
 
   /* Error handling                                                         */
   /*------------------------------------------------------------------------*/
-  struct wcserr err;
-  
+  struct wcserr *err;
+
   /* Private                                                                */
   /*------------------------------------------------------------------------*/
   double w[10];			/* Intermediate values.                     */
@@ -594,7 +606,6 @@ struct prjprm {
 
   int (*prjx2s)(PRJX2S_ARGS);	/* Pointers to the spherical projection and */
   int (*prjs2x)(PRJS2X_ARGS);	/* deprojection functions.                  */
-
 };
 
 /* Size of the prjprm struct in int units, used by the Fortran wrappers. */

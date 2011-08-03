@@ -29,171 +29,206 @@
   Author: Mark Calabretta, Australia Telescope National Facility
   Module author: Michael Droettboom
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id:  $
+  $Id$
 *=============================================================================
 *
 * Summary of the wcserr routines
-* -------------------------------
-* This header defines utility functions to manage error messages in
-* wcslib.
+* ------------------------------
+* Most structs in WCSLIB contain a wcserr struct as a member.  Functions in
+* WCSLIB that return an error status code also set a detailed error message in
+* this struct which also identifies the source file and line number where the
+* error occurred.
 *
-* For most functions in wcslib that return a numeric error status
-* code, a detailed error message is also set on an associated wcserr
-* struct.  For example:
+* For example:
 *
-*     int status;
-*     struct wcsprm wcs;
-*     if ((status = wcsini(&wcs))) {
-*         // Print the error message to the console
-*         printf(wcs.err.msg);
-*     }
+=     struct wcsprm wcs;
+=     if (wcsini(&wcs)) {
+=       // Print the error message to the console
+=       printf("%s\n", wcs.err.msg);
+=     }
 *
-*     
+* A number of utility functions used in managing the wcserr struct are for
+* internal use only.  They are documented here solely as an aid to
+* understanding the code.  They are not intended for external use - the API
+* may change without notice!
+*
+*
 * wcserr struct - Error message handling
 * --------------------------------------
-* The wcserr struct contains the numeric error code, a textual
-* description of the error, and information about the source of the
-* error.
-* 
+* The wcserr struct contains the numeric error code, a textual description of
+* the error, and information about the source file and line number where the
+* error was generated.
+*
 *   int status
-*     The numeric status code associated with the error.  See the
-*     documentation for the function that generated the error for the
-*     meaning of these codes -- it differs according to context.
-*
-*   char msg[WCSERR_MESSAGE_LENGTH]
-*     The detailed error message.
-*
-*   char source_file[80]
-*     The name of the source file where the error was thrown.
+*     Numeric status code associated with the error, the meaning of which
+*     depends on the function that generated it.  See the documentation for
+*     the particular function.
 *
 *   int line_no
-*     The line number where the error was thrown.
+*     Line number where the error occurred as given by the __LINE__
+*     preprocessor macro.
 *
-*     
-* The remainder of the functions defined in this header are for
-* internal use.
+*   const char *function
+*     Name of the function where the error occurred.
 *
-* 
+*   const char *file
+*     Name of the source file where the error occurred as given by the
+*     __FILE__ preprocessor macro.
+*
+*   char msg[WCSERR_MSG_LENGTH]
+*     Informative error message.
+*
+*
+* wcserr_prt() - Print a wcserr struct
+* ------------------------------------
+* wcserr_prt() prints the error message (if any) contained in a wcserr struct.
+* It uses the wcsprintf() functions.
+*
+* Given:
+*   err       const struct wcserr*
+*                       The error object.  If NULL, nothing is printed.
+*
+*   prefix    const char *
+*                       If non-NULL, each output line will be prefixed with
+*                       this string.
+*
+* Function return value:
+*             int       Status return value:
+*                         0: Success.
+*
+*
 * wcserr_ini() - Default constructor for the wcserr struct
 * --------------------------------------------------------
-* Initializes the memory in a wcserr struct.  If the struct has
-* already been initialized, calling wcserr_ini() is not harmful, but
-* will merely clear the error information.
+* INTERNAL USE ONLY.
+*
+* wcserr_ini() initializes the memory in a wcserr struct.  If the struct has
+* already been initialized, calling wcserr_ini() is not harmful, but will
+* merely clear the error information.
 *
 * Given and returned:
 *   err       struct wcserr*
 *                       The error object.
 *
-*                       
+* Function return value:
+*             int       Status return value:
+*                         0: Success.
+*                         1: Null wcserr pointer passed.
+*
+*
+* wcserr_set() - Fill in the contents of an error object
+* ------------------------------------------------------
+* INTERNAL USE ONLY.
+*
+* wcserr_set() fills a wcserr struct with information about an error.
+*
+* A convenience macro, WCSERR_SET, provides the source file and line number
+* information automatically.
+*
+* Given and returned:
+*   err       struct wcserr**
+*                       Error object.
+*
+*                       If err is NULL, returns the status code given without
+*                       setting an error message.
+*
+*                       If *err is NULL, allocates memory for a wcserr struct.
+*
+* Given:
+*   status    int       Numeric status code to set
+*
+*   function  const char *
+*                       Name of the function generating the error.  This
+*                       must point to a constant string, i.e. in the
+*                       initialized read-only data section ("data") of the
+*                       executable.
+*
+*   file      const char *
+*                       Name of the source file generating the error.  This
+*                       must point to a constant string, i.e. in the
+*                       initialized read-only data section ("data") of the
+*                       executable such as given by the __FILE__ preprocessor
+*                       macro.
+*
+*   line_no   int       Line number in the source file generating the error
+*                       such as given by the __LINE__ preprocessor macro.
+*
+*   format    const char *
+*                       Format string of the error message.  May contain
+*                       printf-style %-formatting codes.
+*
+*   ...       mixed     The remaining variable arguments are applied (like
+*                       printf) to the format string to generate the error
+*                       message.
+*
+* Function return value:
+*             int       The status return code passed in.
+*
+*
 * wcserr_copy() - Copy an error object
 * ------------------------------------
-* Copies an error object from src to dst.
+* INTERNAL USE ONLY.
 *
-* Returned:
-*   dst       struct wcserr*
-*                       The destination error object.
+* wcserr_copy() copies an error object from src to dst.
 *
 * Given:
 *   src       const struct wcserr*
-*                       The source error object.
+*                       Source error object.
+*
+*                       If src is NULL, returns 1.
+*
+* Returned:
+*   dst       struct wcserr**
+*                       Destination error object.
+*
+*                       If dst is NULL, returns the status code given without
+*                       copying the wcserr struct.
+*
+*                       If *dst is NULL, allocates memory for a wcserr struct.
 *
 * Function return value:
-*             int
-*                       The numeric status code of the source error
-*                       object.
+*             int       Numeric status code of the source error object.
 *
-*                       
-* wcserr_set() - Fill in the contents of an error object
-* ------------------------------------------------------
-* Fills in an error object with information about an error.  For
-* convenience, consider using the WCSERR_SET macro which will fill in
-* the source file and line number information automatically.
 *
-* Given and returned:
-*   err       struct wcserr*
-*                       The destination error object.  If err is NULL,
-*                       the function will return without setting an
-*                       error message.
+* WCSERR_SET() macro - Fill in the contents of an error object
+* ------------------------------------------------------------
+* INTERNAL USE ONLY.
 *
-* Given:                       
-*   status    int
-*                       The numeric status code to set
+* WCSERR_SET() is a preprocessor macro that helps to fill in the argument list
+* of wcserr_set().  It takes status as an argument of its own and provides the
+* name of the source file and the line number at the point where invoked.  It
+* assumes that the err and function arguments of wcserr_set() will be provided
+* by variables of the same names.
 *
-*   source_file    const char *
-*                       The name of the source file generating the
-*                       error
-*
-*   line_no   int
-*                       The line number in the source file generating
-*                       the error
-*
-*   format    const char *
-*                       The format string of the error message.  May contain
-*                       printf-style %-formatting codes.
-*
-*   ...
-*                       The remaining variable arguments are applied
-*                       (like printf) to the format string to generate
-*                       the error message.
-*
-* Function return value:
-*             int       The status return code passed in.
-*
-*             
-* WCSERR_SET() - Macro to fill in the contents of an error object
-* ---------------------------------------------------------------
-* Fills in an error object with information about an error.  Fills in
-* the source file and line number where WCSERR_SET was called
-* automatically.
-*
-* Given/returned:
-*   err       struct wcserr*
-*                       The destination error object
-*
-* Given:                       
-*   status    int
-*                       The numeric status code to set
-*
-*   format    const char *
-*                       The format string of the error message.  May contain
-*                       printf-style %-formatting codes.
-*
-*   ...
-*                       The remaining variable arguments are applied
-*                       (like printf) to the format string to generate
-*                       the error message.
-*
-* Function return value:
-*             int       The status return code passed in.
-*     
 *===========================================================================*/
 
 #ifndef WCSLIB_WCSERR
 #define WCSLIB_WCSERR
 
-#define WCSERR_MESSAGE_LENGTH 160
+#define WCSERR_MSG_LENGTH 160
 
 struct wcserr {
-  int  status;                     /* Integral status code for the error */
-  char msg[WCSERR_MESSAGE_LENGTH]; /* String message for the error */
-
-  char source_file[80];            /* The source file of the error */
-  int  line_no;                    /* The line number where the error occurred */
+  int  status;			/* Status code for the error.               */
+  int  line_no;			/* Line number where the error occurred.    */
+  const char *function;		/* Function name.                           */
+  const char *file;		/* Source file name.                        */
+  char msg[WCSERR_MSG_LENGTH];	/* Informative error message.               */
 };
 
-void wcserr_ini(struct wcserr *err);
+/* Size of the wcserr struct in int units, used by the Fortran wrappers. */
+#define ERRLEN (sizeof(struct wcserr)/sizeof(int))
 
-int wcserr_copy(struct wcserr* dst, const struct wcserr* src);
+int wcserr_prt(const struct wcserr *err, const char *prefix);
 
-int wcserr_set(
-  struct wcserr *err,
-  int status,
-  const char *source_file,
-  int line_no,
-  const char *format,
-  ...);
 
-#define WCSERR_SET(err, status, format, ...) \
-  wcserr_set((err), (status), __FILE__, __LINE__, (format), ##__VA_ARGS__)
+/* INTERNAL USE ONLY -------------------------------------------------------*/
+int wcserr_ini(struct wcserr *err);
+
+int wcserr_set(struct wcserr **err, int status, const char *function,
+  const char *file, int line_no, const char *format, ...);
+
+int wcserr_copy(const struct wcserr *src, struct wcserr **dst);
+
+/* Convenience macro for invoking wcserr_set(). */
+#define WCSERR_SET(status) err, status, function, __FILE__, __LINE__
 
 #endif /* WSCLIB_WCSERR */

@@ -27,8 +27,9 @@
                     AUSTRALIA
 
   Author: Mark Calabretta, Australia Telescope National Facility
+     and: Michael Droetboom, Space Telescope Science Institute
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: twcs.c,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: twcs.c,v 4.7.1.1 2011/02/07 07:04:23 cal103 Exp cal103 $
 *=============================================================================
 *
 * twcs tests wcss2p() and wcsp2s() for closure on an oblique 2-D slice through
@@ -46,6 +47,7 @@
 
 
 void parser(struct wcsprm *);
+int  check_error(struct wcsprm *, int, int, char *);
 void test_errors();
 
 /* Reporting tolerance. */
@@ -72,6 +74,7 @@ const double RESTWAV  =   0.0;
 int NPV = 3;
 struct pvcard PV[3];		/* Projection parameters are set in main(). */
 
+int itest = 0;
 
 int main()
 
@@ -142,6 +145,10 @@ int main()
   printf("         tabprm:%5"MODZ"u /%4"MODZ"u%s\n", sizeof(struct tabprm),
          TABLEN, s);
 
+  s = (sizeof(struct wcserr) == sizeof(int)*ERRLEN) ? ok : mismatch;
+  printf("         wcserr:%5"MODZ"u /%4"MODZ"u%s\n", sizeof(struct wcserr),
+         ERRLEN, s);
+
   s = (sizeof(struct wcsprm) == sizeof(int)*WCSLEN) ? ok : mismatch;
   printf("         wcsprm:%5"MODZ"u /%4"MODZ"u%s\n", sizeof(struct wcsprm),
          WCSLEN, s);
@@ -173,9 +180,6 @@ int main()
   wcs->flag = -1;
   parser(wcs);
 
-  /* The following tests that error messages are generated */
-  test_errors();
-  
   printf("\nReporting tolerance %5.1g pixel.\n", tol);
 
 
@@ -206,21 +210,24 @@ int main()
       world1[k][wcs->lat] = lat1;
     }
 
-    if ((status = wcss2p(wcs, 361, NELEM, world1[0], phi, theta, img[0],
-                         pixel1[0], stat))) {
-      printf("   wcss2p(1) ERROR %2d (lat1 = %f)\n", status, lat1);
+    if (wcss2p(wcs, 361, NELEM, world1[0], phi, theta, img[0], pixel1[0],
+               stat)) {
+      printf("  At wcss2p#1 with lat1 == %f\n", lat1);
+      wcsperr(wcs, "  ");
       continue;
     }
 
-    if ((status = wcsp2s(wcs, 361, NELEM, pixel1[0], img[0], phi, theta,
-                         world2[0], stat))) {
-      printf("   wcsp2s ERROR %2d (lat1 = %f)\n", status, lat1);
+    if (wcsp2s(wcs, 361, NELEM, pixel1[0], img[0], phi, theta, world2[0],
+               stat)) {
+      printf("  At wcsp2s with lat1 == %f\n", lat1);
+      wcsperr(wcs, "  ");
       continue;
     }
 
-    if ((status = wcss2p(wcs, 361, NELEM, world2[0], phi, theta, img[0],
-                         pixel2[0], stat))) {
-      printf("   wcss2p(2) ERROR %2d (lat1 = %f)\n", status, lat1);
+    if (wcss2p(wcs, 361, NELEM, world2[0], phi, theta, img[0], pixel2[0],
+               stat)) {
+      printf("  At wcss2p#2 with lat1 == %f\n", lat1);
+      wcsperr(wcs, "  ");
       continue;
     }
 
@@ -250,6 +257,19 @@ int main()
 
   printf("Maximum closure residual: %10.3e pixel.\n", residmax);
 
+
+  /* Test wcserr and wcsprintf() as well. */
+  wcsprintf_set(stderr);
+  wcsprintf("\n\nIGNORE messages marked with 'OK', they test wcserr "
+    "(and wcsprintf):\n");
+  test_errors();
+
+  wcs->pv[2].value = UNDEFINED;
+  status = wcsset(wcs);
+  check_error(wcs, status, WCSERR_BAD_PARAM, "Invalid parameter value");
+
+
+  /* Clean up. */
   wcsfree(wcs);
   free(wcs);
 
@@ -263,7 +283,7 @@ void parser(wcs)
 struct wcsprm *wcs;
 
 {
-  int i, j, status;
+  int i, j;
   double *pcij;
 
   /* In practice a parser would read the FITS header until it encountered  */
@@ -313,27 +333,39 @@ struct wcsprm *wcs;
   }
 
   /* Extract information from the FITS header. */
-  if ((status = wcsset(wcs))) {
-    printf("wcsset ERROR%3d\n", status);
+  if (wcsset(wcs)) {
+    wcsperr(wcs, "");
   }
 
   return;
 }
 
-int check_error(struct wcsprm *wcs, char *name, int status, int exstatus, char *exmessage)
+/*--------------------------------------------------------------------------*/
+
+int check_error(struct wcsprm *wcs, int status, int exstatus, char *exmsg)
 {
-  if (status == exstatus && strcmp(wcs->err.msg, exmessage) == 0) {
-    return 0;
+  const char *errmsg = (status ? (wcs->err)->msg : "");
+
+  wcsprintf("\nTest %d...\n", ++itest);
+
+  if (status == exstatus && strcmp(errmsg, exmsg) == 0) {
+    wcsperr(wcs, "OK: ");
+    wcsprintf("...succeeded.\n");
   } else {
-    printf("%s ERROR Expected %d:'%s', got %d:'%s'\n",
-           name, exstatus, exmessage, status, wcs->err.msg);
+    wcsprintf("Expected error %d: '%s', got\n", exstatus, exmsg);
+    wcsperr(wcs, "");
+    wcsprintf("...failed.\n");
     return 1;
   }
+
+  return 0;
 }
 
-void test_errors()
-{
+/*--------------------------------------------------------------------------*/
 
+void test_errors()
+
+{
   struct wcsprm wcs;
   int status;
   int i;
@@ -346,56 +378,41 @@ void test_errors()
   char unmatched[2][9] = {
     "RA---TAN", "FREQ-LOG"
   };
-  
+
   wcs.flag = -1;
   status = wcsini(1, -32, &wcs);
-  if (check_error(
-        &wcs, "wcsini", status,
-        WCSERR_MEMORY, "naxis must be positive (got -32)"))
-    return;
+  check_error(&wcs, status, WCSERR_MEMORY,
+    "naxis must be positive (got -32)");
 
-  wcs.flag = -1;
+  wcs.flag = 0;
   status = wcsini(1, 1 << 30, &wcs);
-  if (check_error(
-        &wcs, "wcsini", status,
-        WCSERR_MEMORY, "Memory allocation failed"))
-    return;
+  check_error(&wcs, status, WCSERR_MEMORY, "Memory allocation failed");
 
-  wcs.flag = -1;
+  wcs.flag = 0;
   status = wcsini(1, 2, &wcs);
-  if (check_error(
-        &wcs, "wcsini", status,
-        WCSERR_SUCCESS, ""))
-    return;
+  check_error(&wcs, status, WCSERR_SUCCESS, "");
 
   for (i = 0; i < 2; i++) {
     strcpy(wcs.ctype[i], &multiple_cubeface[i][0]);
   }
   status = wcsset(&wcs);
-  if (check_error(
-        &wcs, "wcsset", status,
-        WCSERR_BAD_CTYPE, "Multiple CUBEFACE axes (in CTYPE0  and CTYPE1 )"))
-    return;
+  check_error(&wcs, status, WCSERR_BAD_CTYPE,
+    "Multiple CUBEFACE axes (in CTYPE0 and CTYPE1)");
 
-  wcs.flag = -1;
+  wcs.flag = 0;
   status = wcsini(1, 2, &wcs);
   for (i = 0; i < 2; i++) {
     strcpy(wcs.ctype[i], &projection_code[i][0]);
   }
   status = wcsset(&wcs);
-  if (check_error(
-        &wcs, "wcsset", status,
-        WCSERR_BAD_CTYPE, "Unrecognized projection code (FOO in CTYPE0 )"))
-    return;
-  
-  wcs.flag = -1;
+  check_error(&wcs, status, WCSERR_BAD_CTYPE,
+    "Unrecognized projection code (FOO in CTYPE0)");
+
+  wcs.flag = 0;
   status = wcsini(1, 2, &wcs);
   for (i = 0; i < 2; i++) {
     strcpy(wcs.ctype[i], &unmatched[i][0]);
   }
   status = wcsset(&wcs);
-  if (check_error(
-        &wcs, "wcsset", status,
-        WCSERR_BAD_CTYPE, "Unmatched celestial axes"))
-    return;
+  check_error(&wcs, status, WCSERR_BAD_CTYPE, "Unmatched celestial axes");
 }

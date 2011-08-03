@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: prj.c,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: prj.c,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
 *===========================================================================*/
 
 #include <math.h>
@@ -38,6 +38,7 @@
 #include "wcsmath.h"
 #include "wcsprintf.h"
 #include "wcstrig.h"
+#include "wcsutil.h"
 #include "prj.h"
 
 
@@ -101,19 +102,19 @@ const char *prj_errmsg[] = {
   "One or more of the (phi,theta) coordinates were invalid"};
 
 /* Some convenience macros for creating common projection errors */
-#define PRJERR_BAD_PARAM_SET(prj)                             \
-  WCSERR_SET(&(prj)->err, PRJERR_BAD_PARAM,                   \
-             "Invalid parameters for %s projection", (prj)->name);
+#define PRJERR_BAD_PARAM_SET(function) \
+  wcserr_set(&(prj->err), PRJERR_BAD_PARAM, function, __FILE__, __LINE__, \
+    "Invalid parameters for %s projection", prj->name);
 
-#define PRJERR_BAD_PIX_SET(prj)                               \
-  WCSERR_SET(&(prj)->err, PRJERR_BAD_PIX,                     \
-             "One or more of the (x, y) coordinates were invalid for %s projection", \
-             (prj)->name);
+#define PRJERR_BAD_PIX_SET(function) \
+  wcserr_set(&(prj->err), PRJERR_BAD_PIX, function, __FILE__, __LINE__, \
+    "One or more of the (x, y) coordinates were invalid for %s projection", \
+    prj->name);
 
-#define PRJERR_BAD_WORLD_SET(prj)                             \
-  WCSERR_SET(&(prj)->err, PRJERR_BAD_WORLD,                   \
-             "One or more of the (lat, lng) coordinates were invalid for %s projection", \
-             (prj)->name);
+#define PRJERR_BAD_WORLD_SET(function) \
+  wcserr_set(&(prj->err), PRJERR_BAD_WORLD, function, __FILE__, __LINE__, \
+    "One or more of the (lat, lng) coordinates were invalid for " \
+    "%s projection", prj->name);
 
 #define copysign(X, Y) ((Y) < 0.0 ? -fabs(X) : fabs(X))
 
@@ -145,8 +146,6 @@ struct prjprm *prj;
 
   if (prj == 0x0) return PRJERR_NULL_POINTER;
 
-  wcserr_ini(&prj->err);
-
   prj->flag = 0;
 
   strcpy(prj->code, "   ");
@@ -175,6 +174,8 @@ struct prjprm *prj;
   prj->m = 0;
   prj->n = 0;
 
+  prj->err = 0x0;
+
   return 0;
 }
 
@@ -185,7 +186,8 @@ int prjprt(prj)
 const struct prjprm *prj;
 
 {
-  int i, n;
+  char hext[32];
+  int  i, n;
 
   if (prj == 0x0) return PRJERR_NULL_POINTER;
 
@@ -242,6 +244,12 @@ const struct prjprm *prj;
   wcsprintf("  divergent: %d\n", prj->divergent);
   wcsprintf("         x0: %f\n", prj->x0);
   wcsprintf("         y0: %f\n", prj->y0);
+
+  wcsprintf("        err: %p\n", (void *)prj->err);
+  if (prj->err) {
+    wcserr_prt(prj->err, "");
+  }
+
   wcsprintf("        w[]:");
   for (i = 0; i < 5; i++) {
     wcsprintf("  %- 11.5g", prj->w[i]);
@@ -253,8 +261,10 @@ const struct prjprm *prj;
   wcsprintf("\n");
   wcsprintf("          m: %d\n", prj->m);
   wcsprintf("          n: %d\n", prj->n);
-  wcsprintf("     prjx2s: %p\n", (void *)prj->prjx2s);
-  wcsprintf("     prjs2x: %p\n", (void *)prj->prjs2x);
+  wcsprintf("     prjx2s: %s\n",
+    wcsutil_fptr2str((int (*)())prj->prjx2s, hext));
+  wcsprintf("     prjs2x: %s\n",
+    wcsutil_fptr2str((int (*)())prj->prjs2x, hext));
 
   return 0;
 }
@@ -266,9 +276,13 @@ int prjset(prj)
 struct prjprm *prj;
 
 {
+  static const char *function = "prjset";
+
   int status;
+  struct wcserr **err;
 
   if (prj == 0x0) return PRJERR_NULL_POINTER;
+  err = &(prj->err);
 
   /* Invoke the relevant initialization routine. */
   prj->code[3] = '\0';
@@ -328,9 +342,8 @@ struct prjprm *prj;
     status = hpxset(prj);
   } else {
     /* Unrecognized projection code. */
-    status = WCSERR_SET(
-      &prj->err, PRJERR_BAD_PARAM,
-      "Unrecognized projection code '%s'", prj->code);
+    status = wcserr_set(WCSERR_SET(PRJERR_BAD_PARAM),
+               "Unrecognized projection code '%s'", prj->code);
   }
 
   return status;
@@ -348,11 +361,11 @@ int stat[];
 
 {
   int status;
-  
+
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag == 0) {
-    if (status = prjset(prj)) return status;
+    if ((status = prjset(prj))) return status;
   }
 
   return prj->prjx2s(prj, nx, ny, sxy, spt, x, y, phi, theta, stat);
@@ -370,11 +383,11 @@ int stat[];
 
 {
   int status;
-  
+
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag == 0) {
-    if (status = prjset(prj)) return status;
+    if ((status = prjset(prj))) return status;
   }
 
   return prj->prjs2x(prj, nphi, ntheta, spt, sxy, phi, theta, x, y, stat);
@@ -407,7 +420,7 @@ const double phi0, theta0;
   } else {
     if (prj->prjs2x(prj, 1, 1, 1, 1, &(prj->phi0), &(prj->theta0), &x0, &y0,
                     &stat)) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("prjoff");
     }
 
     prj->x0 = x0;
@@ -471,12 +484,12 @@ struct prjprm *prj;
 
   prj->w[0] = prj->r0*(prj->pv[1] + 1.0);
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("azpset");
   }
 
   prj->w[3] = cosd(prj->pv[2]);
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("azpset");
   }
 
   prj->w[2] = 1.0/prj->w[3];
@@ -515,12 +528,12 @@ int stat[];
   register int ix, iy, *statp;
   register const double *xp, *yp;
   register double *phip, *thetap;
-  
+
 
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AZP) {
-    if (status = azpset(prj)) return status;
+    if ((status = azpset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -584,7 +597,7 @@ int stat[];
           if (fabs(t) > 1.0+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("azpx2s");
             continue;
           }
           t = copysign(90.0, t);
@@ -604,10 +617,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
-  
   return status;
 }
 
@@ -632,7 +641,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AZP) {
-    if (status = azpset(prj)) return status;
+    if ((status = azpset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -681,7 +690,7 @@ int stat[];
         *xp = 0.0;
         *yp = 0.0;
         *(statp++) = 1;
-        status = PRJERR_BAD_WORLD;
+        status = PRJERR_BAD_WORLD_SET("azps2x");
 
       } else {
         r = prj->w[0]*costhe/t;
@@ -692,7 +701,7 @@ int stat[];
           if (*thetap < prj->w[5]) {
             /* Overlap. */
             istat  = 1;
-            status = PRJERR_BAD_WORLD;
+            status = PRJERR_BAD_WORLD_SET("azps2x");
 
           } else if (prj->w[7] > 0.0) {
             /* Divergence. */
@@ -709,7 +718,7 @@ int stat[];
 
               if (*thetap < ((a > b) ? a : b)) {
                 istat  = 1;
-                status = PRJERR_BAD_WORLD;
+                status = PRJERR_BAD_WORLD_SET("azps2x");
               }
             }
           }
@@ -720,10 +729,6 @@ int stat[];
         *(statp++) = istat;
       }
     }
-  }
-
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
   }
 
   return status;
@@ -791,7 +796,7 @@ struct prjprm *prj;
 
   prj->w[3] = prj->pv[1] * sind(prj->pv[3]) + 1.0;
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("szpset");
   }
 
   prj->w[1] = -prj->pv[1] * cosd(prj->pv[3]) * sind(prj->pv[2]);
@@ -835,7 +840,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SZP) {
-    if (status = szpset(prj)) return status;
+    if ((status = szpset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -898,7 +903,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("szpx2s");
           continue;
         }
         d = sqrt(d);
@@ -925,7 +930,7 @@ int stat[];
           *phip   = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("szpx2s");
           continue;
         }
 
@@ -939,10 +944,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
-  
   return status;
 }
 
@@ -967,7 +968,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SZP) {
-    if (status = szpset(prj)) return status;
+    if ((status = szpset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -1016,7 +1017,7 @@ int stat[];
         *(statp++) = 1;
       }
 
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("szps2x");
 
     } else {
       r = prj->w[6]*cosd(*thetap)/t;
@@ -1030,7 +1031,7 @@ int stat[];
           if (*thetap < prj->w[8]) {
             /* Divergence. */
             istat  = 1;
-            status = PRJERR_BAD_WORLD;
+            status = PRJERR_BAD_WORLD_SET("szps2x");
 
           } else if (fabs(prj->pv[1]) > 1.0) {
             /* Overlap. */
@@ -1048,7 +1049,7 @@ int stat[];
 
               if (*thetap < ((a > b) ? a : b)) {
                 istat  = 1;
-                status = PRJERR_BAD_WORLD;
+                status = PRJERR_BAD_WORLD_SET("szps2x");
               }
             }
           }
@@ -1061,10 +1062,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
-  
   return status;
 }
 
@@ -1134,7 +1131,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TAN) {
-    if (status = tanset(prj)) return status;
+    if ((status = tanset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -1210,7 +1207,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TAN) {
-    if (status = tanset(prj)) return status;
+    if ((status = tanset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -1256,7 +1253,7 @@ int stat[];
         *yp = 0.0;
         *(statp++) = 1;
       }
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("tans2x");
 
     } else {
       r =  prj->r0*cosd(*thetap)/s;
@@ -1264,7 +1261,7 @@ int stat[];
       istat = 0;
       if (prj->bounds && s < 0.0) {
         istat  = 1;
-        status = PRJERR_BAD_WORLD;
+        status = PRJERR_BAD_WORLD_SET("tans2x");
       }
 
       for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -1275,9 +1272,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -1355,7 +1349,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != STG) {
-    if (status = stgset(prj)) return status;
+    if ((status = stgset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -1431,7 +1425,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != STG) {
-    if (status = stgset(prj)) return status;
+    if ((status = stgset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -1477,7 +1471,7 @@ int stat[];
         *yp = 0.0;
         *(statp++) = 1;
       }
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("stgs2x");
 
     } else {
       r = prj->w[0]*cosd(*thetap)/s;
@@ -1490,9 +1484,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -1577,7 +1568,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SIN) {
-    if (status = sinset(prj)) return status;
+    if ((status = sinset(prj))) return status;
   }
 
   xi  = prj->pv[1];
@@ -1638,7 +1629,7 @@ int stat[];
           *thetap = asind(sqrt(1.0 - r2));
         } else {
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("sinx2s")
           continue;
         }
 
@@ -1647,54 +1638,54 @@ int stat[];
         xy = x0*xi + y0*eta;
 
         if (r2 < 1.0e-10) {
-           /* Use small angle formula. */
-           z = r2/2.0;
-           *thetap = 90.0 - R2D*sqrt(r2/(1.0 + xy));
+          /* Use small angle formula. */
+          z = r2/2.0;
+          *thetap = 90.0 - R2D*sqrt(r2/(1.0 + xy));
 
         } else {
-           a = prj->w[2];
-           b = xy - prj->w[1];
-           c = r2 - xy - xy + prj->w[3];
-           d = b*b - a*c;
+          a = prj->w[2];
+          b = xy - prj->w[1];
+          c = r2 - xy - xy + prj->w[3];
+          d = b*b - a*c;
 
-           /* Check for a solution. */
-           if (d < 0.0) {
-             *phip = 0.0;
-             *thetap = 0.0;
-             *(statp++) = 1;
-             status = PRJERR_BAD_PIX;
-             continue;
-           }
-           d = sqrt(d);
+          /* Check for a solution. */
+          if (d < 0.0) {
+            *phip = 0.0;
+            *thetap = 0.0;
+            *(statp++) = 1;
+            status = PRJERR_BAD_PIX_SET("sinx2s")
+            continue;
+          }
+          d = sqrt(d);
 
-           /* Choose solution closest to pole. */
-           sinth1 = (-b + d)/a;
-           sinth2 = (-b - d)/a;
-           sinthe = (sinth1 > sinth2) ? sinth1 : sinth2;
-           if (sinthe > 1.0) {
-             if (sinthe-1.0 < tol) {
-               sinthe = 1.0;
-             } else {
-               sinthe = (sinth1 < sinth2) ? sinth1 : sinth2;
-             }
-           }
+          /* Choose solution closest to pole. */
+          sinth1 = (-b + d)/a;
+          sinth2 = (-b - d)/a;
+          sinthe = (sinth1 > sinth2) ? sinth1 : sinth2;
+          if (sinthe > 1.0) {
+            if (sinthe-1.0 < tol) {
+              sinthe = 1.0;
+            } else {
+              sinthe = (sinth1 < sinth2) ? sinth1 : sinth2;
+            }
+          }
 
-           if (sinthe < -1.0) {
-             if (sinthe+1.0 > -tol) {
-               sinthe = -1.0;
-             }
-           }
+          if (sinthe < -1.0) {
+            if (sinthe+1.0 > -tol) {
+              sinthe = -1.0;
+            }
+          }
 
-           if (sinthe > 1.0 || sinthe < -1.0) {
-             *phip = 0.0;
-             *thetap = 0.0;
-             *(statp++) = 1;
-             status = PRJERR_BAD_PIX;
-             continue;
-           }
+          if (sinthe > 1.0 || sinthe < -1.0) {
+            *phip = 0.0;
+            *thetap = 0.0;
+            *(statp++) = 1;
+            status = PRJERR_BAD_PIX_SET("sinx2s")
+            continue;
+          }
 
-           *thetap = asind(sinthe);
-           z = 1.0 - sinthe;
+          *thetap = asind(sinthe);
+          z = 1.0 - sinthe;
         }
 
         x1 = -y0 + eta*z;
@@ -1710,9 +1701,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -1737,7 +1725,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SIN) {
-    if (status = sinset(prj)) return status;
+    if ((status = sinset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -1795,7 +1783,7 @@ int stat[];
       istat = 0;
       if (prj->bounds && *thetap < 0.0) {
         istat  = 1;
-        status = PRJERR_BAD_WORLD;
+        status = PRJERR_BAD_WORLD_SET("sins2x");
       }
 
       for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -1816,7 +1804,7 @@ int stat[];
           t = -atand(prj->pv[1]*(*xp) - prj->pv[2]*(*yp));
           if (*thetap < t) {
             istat  = 1;
-            status = PRJERR_BAD_WORLD;
+            status = PRJERR_BAD_WORLD_SET("sins2x");
           }
         }
 
@@ -1827,9 +1815,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -1907,7 +1892,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ARC) {
-    if (status = arcset(prj)) return status;
+    if ((status = arcset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -1984,7 +1969,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ARC) {
-    if (status = arcset(prj)) return status;
+    if ((status = arcset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -2087,7 +2072,7 @@ struct prjprm *prj;
   /* Find the highest non-zero coefficient. */
   for (k = PVN-1; k >= 0 && prj->pv[k] == 0.0; k--);
   if (k < 0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("zpnset");
   }
 
   prj->n = k;
@@ -2101,7 +2086,7 @@ struct prjprm *prj;
     zd1 = 0.0;
     d1  = prj->pv[1];
     if (d1 <= 0.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("zpnset");
     }
 
     /* Find the point where the derivative first goes negative. */
@@ -2179,7 +2164,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZPN) {
-    if (status = zpnset(prj)) return status;
+    if ((status = zpnset(prj))) return status;
   }
 
   k = prj->n;
@@ -2232,7 +2217,7 @@ int stat[];
 
       if (k < 1) {
         /* Constant - no solution. */
-        return PRJERR_BAD_PARAM_SET(prj);
+        return PRJERR_BAD_PARAM_SET("zpnx2s");
       } else if (k == 1) {
         /* Linear. */
         zd = (r - prj->pv[0])/prj->pv[1];
@@ -2246,7 +2231,7 @@ int stat[];
         if (d < 0.0) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("zpnx2s");
           continue;
         }
         d = sqrt(d);
@@ -2260,7 +2245,7 @@ int stat[];
           if (zd < -tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("zpnx2s");
             continue;
           }
           zd = 0.0;
@@ -2268,7 +2253,7 @@ int stat[];
           if (zd > PI+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("zpnx2s");
             continue;
           }
           zd = PI;
@@ -2284,7 +2269,7 @@ int stat[];
           if (r < r1-tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("zpnx2s");
             continue;
           }
           zd = zd1;
@@ -2292,7 +2277,7 @@ int stat[];
           if (r > r2+tol) {
             *thetap = 0.0;
             *(statp++) = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("zpnx2s");
             continue;
           }
           zd = zd2;
@@ -2333,9 +2318,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -2360,7 +2342,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZPN) {
-    if (status = zpnset(prj)) return status;
+    if ((status = zpnset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -2410,7 +2392,7 @@ int stat[];
     istat = 0;
     if (prj->bounds && s > prj->w[0]) {
       istat  = 1;
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("zpns2x");
     }
 
     for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -2420,9 +2402,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -2501,7 +2480,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZEA) {
-    if (status = zeaset(prj)) return status;
+    if ((status = zeaset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -2557,7 +2536,7 @@ int stat[];
         } else {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("zeax2s");
           continue;
         }
       } else {
@@ -2568,9 +2547,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -2595,7 +2571,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != ZEA) {
-    if (status = zeaset(prj)) return status;
+    if ((status = zeaset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -2707,7 +2683,7 @@ struct prjprm *prj;
     prj->w[1] = log(cosxi)*(cosxi*cosxi)/(1.0-cosxi*cosxi);
     prj->w[2] = 0.5 - prj->w[1];
   } else {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("airset");
   }
 
   prj->w[3] = prj->w[0] * prj->w[2];
@@ -2743,7 +2719,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIR) {
-    if (status = airset(prj)) return status;
+    if ((status = airset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -2813,7 +2789,7 @@ int stat[];
         if (k == 30) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("airx2s");
           continue;
         }
 
@@ -2843,7 +2819,7 @@ int stat[];
         if (k == 100) {
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("airx2s");
           continue;
         }
 
@@ -2855,9 +2831,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -2882,7 +2855,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIR) {
-    if (status = airset(prj)) return status;
+    if ((status = airset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -2937,7 +2910,7 @@ int stat[];
     } else {
       r = 0.0;
       istat  = 1;
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("airs2x");
     }
 
     for (iphi = 0; iphi < mphi; iphi++, xp += sxy, yp += sxy) {
@@ -2947,9 +2920,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -3007,28 +2977,28 @@ struct prjprm *prj;
 
     prj->w[0] = prj->pv[2];
     if (prj->w[0] == 0.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("cypset");
     }
 
     prj->w[1] = 1.0/prj->w[0];
 
     prj->w[2] = R2D*(prj->pv[1] + prj->pv[2]);
     if (prj->w[2] == 0.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("cypset");
     }
 
     prj->w[3] = 1.0/prj->w[2];
   } else {
     prj->w[0] = prj->r0*prj->pv[2]*D2R;
     if (prj->w[0] == 0.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("cypset");
     }
 
     prj->w[1] = 1.0/prj->w[0];
 
     prj->w[2] = prj->r0*(prj->pv[1] + prj->pv[2]);
     if (prj->w[2] == 0.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("cypset");
     }
 
     prj->w[3] = 1.0/prj->w[2];
@@ -3061,7 +3031,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CYP) {
-    if (status = cypset(prj)) return status;
+    if ((status = cypset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -3127,7 +3097,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CYP) {
-    if (status = cypset(prj)) return status;
+    if ((status = cypset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -3167,7 +3137,7 @@ int stat[];
     istat = 0;
     if (eta == 0.0) {
       istat  = 1;
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("cyps2x");
 
     } else {
       eta = prj->w[2]*sind(*thetap)/eta;
@@ -3180,9 +3150,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -3237,7 +3204,7 @@ struct prjprm *prj;
     prj->w[0] = 1.0;
     prj->w[1] = 1.0;
     if (prj->pv[1] <= 0.0 || prj->pv[1] > 1.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("ceaset");
     }
     prj->w[2] = prj->r0/prj->pv[1];
     prj->w[3] = prj->pv[1]/prj->r0;
@@ -3245,7 +3212,7 @@ struct prjprm *prj;
     prj->w[0] = prj->r0*D2R;
     prj->w[1] = R2D/prj->r0;
     if (prj->pv[1] <= 0.0 || prj->pv[1] > 1.0) {
-      return PRJERR_BAD_PARAM_SET(prj);
+      return PRJERR_BAD_PARAM_SET("ceaset");
     }
     prj->w[2] = prj->r0/prj->pv[1];
     prj->w[3] = prj->pv[1]/prj->r0;
@@ -3279,7 +3246,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CEA) {
-    if (status = ceaset(prj)) return status;
+    if ((status = ceaset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -3321,7 +3288,7 @@ int stat[];
       if (fabs(s) > 1.0+tol) {
         s = 0.0;
         istat  = 1;
-        status = PRJERR_BAD_PIX;
+        status = PRJERR_BAD_PIX_SET("ceax2s");
       } else {
         s = copysign(90.0, s);
       }
@@ -3335,9 +3302,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -3362,7 +3326,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CEA) {
-    if (status = ceaset(prj)) return status;
+    if ((status = ceaset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -3480,7 +3444,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CAR) {
-    if (status = carset(prj)) return status;
+    if ((status = carset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -3545,7 +3509,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CAR) {
-    if (status = carset(prj)) return status;
+    if ((status = carset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -3663,7 +3627,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MER) {
-    if (status = merset(prj)) return status;
+    if ((status = merset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -3728,7 +3692,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MER) {
-    if (status = merset(prj)) return status;
+    if ((status = merset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -3768,7 +3732,7 @@ int stat[];
     if (*thetap <= -90.0 || *thetap >= 90.0) {
       eta = 0.0;
       istat  = 1;
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("mers2x");
     } else {
       eta = prj->r0*log(tand((*thetap+90.0)/2.0)) - prj->y0;
     }
@@ -3779,9 +3743,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -3859,7 +3820,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SFL) {
-    if (status = sflset(prj)) return status;
+    if ((status = sflset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -3870,6 +3831,8 @@ int stat[];
     my = 1;
     ny = nx;
   }
+
+  status = 0;
 
 
   /* Do x dependence. */
@@ -3899,7 +3862,7 @@ int stat[];
     istat = 0;
     if (s == 0.0) {
       istat  = 1;
-      status = PRJERR_BAD_PIX;
+      status = PRJERR_BAD_PIX_SET("sflx2s");
     } else {
       s = 1.0/s;
     }
@@ -3913,9 +3876,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -3940,7 +3900,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != SFL) {
-    if (status = sflset(prj)) return status;
+    if ((status = sflset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -4068,7 +4028,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PAR) {
-    if (status = parset(prj)) return status;
+    if ((status = parset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -4116,7 +4076,7 @@ int stat[];
       s = 0.0;
       t = 0.0;
       istat  = 1;
-      status = PRJERR_BAD_PIX;
+      status = PRJERR_BAD_PIX_SET("parx2s");
 
     } else {
       s = 1.0 - 4.0*r*r;
@@ -4136,7 +4096,7 @@ int stat[];
           *(statp++) = 0;
         } else {
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("parx2s");
         }
       }
 
@@ -4145,9 +4105,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -4172,7 +4129,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PAR) {
-    if (status = parset(prj)) return status;
+    if ((status = parset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -4296,7 +4253,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MOL) {
-    if (status = molset(prj)) return status;
+    if ((status = molset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -4345,7 +4302,7 @@ int stat[];
     if (r <= tol) {
       if (r < -tol) {
         istat  = 1;
-        status = PRJERR_BAD_PIX;
+        status = PRJERR_BAD_PIX_SET("molx2s");
       } else {
         /* OK if fabs(x) < tol whence phi = 0.0. */
         istat = -1;
@@ -4364,7 +4321,7 @@ int stat[];
       if (fabs(z) > 1.0+tol) {
         z = 0.0;
         istat  = 1;
-        status = PRJERR_BAD_PIX;
+        status = PRJERR_BAD_PIX_SET("molx2s");
       } else {
         z = copysign(1.0, z) + y0*r/PI;
       }
@@ -4376,7 +4333,7 @@ int stat[];
       if (fabs(z) > 1.0+tol) {
         z = 0.0;
         istat  = 1;
-        status = PRJERR_BAD_PIX;
+        status = PRJERR_BAD_PIX_SET("molx2s");
       } else {
         z = copysign(1.0, z);
       }
@@ -4390,7 +4347,7 @@ int stat[];
           *(statp++) = 0;
         } else {
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("molx2s");
         }
       }
 
@@ -4399,9 +4356,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -4427,7 +4381,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != MOL) {
-    if (status = molset(prj)) return status;
+    if ((status = molset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -4575,7 +4529,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIT) {
-    if (status = aitset(prj)) return status;
+    if ((status = aitset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -4626,7 +4580,7 @@ int stat[];
       if (s < 0.5) {
         if (s < 0.5-tol) {
           istat  = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("aitx2s");
         }
 
         s = 0.5;
@@ -4645,7 +4599,7 @@ int stat[];
       if (fabs(t) > 1.0) {
         if (fabs(t) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("aitx2s");
         }
         t = copysign(90.0, t);
 
@@ -4658,9 +4612,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -4685,7 +4636,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != AIT) {
-    if (status = aitset(prj)) return status;
+    if ((status = aitset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -4776,7 +4727,7 @@ struct prjprm *prj;
   strcpy(prj->name, "conic perspective");
 
   if (undefined(prj->pv[1])) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("copset");
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
@@ -4791,14 +4742,14 @@ struct prjprm *prj;
 
   prj->w[0] = sind(prj->pv[1]);
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("copset");
   }
 
   prj->w[1] = 1.0/prj->w[0];
 
   prj->w[3] = prj->r0*cosd(prj->pv[2]);
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("copset");
   }
 
   prj->w[4] = 1.0/prj->w[3];
@@ -4832,7 +4783,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COP) {
-    if (status = copset(prj)) return status;
+    if ((status = copset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -4910,7 +4861,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COP) {
-    if (status = copset(prj)) return status;
+    if ((status = copset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -4958,14 +4909,14 @@ int stat[];
     if (s == 0.0) {
       r = 0.0;
       istat  = 1;
-      status = PRJERR_BAD_WORLD;
+      status = PRJERR_BAD_WORLD_SET("cops2x");
 
     } else {
       r = prj->w[2] - prj->w[3]*sind(t)/s;
 
       if (prj->bounds && r*prj->w[0] < 0.0) {
         istat  = 1;
-        status = PRJERR_BAD_WORLD;
+        status = PRJERR_BAD_WORLD_SET("cops2x");
       }
     }
 
@@ -4976,9 +4927,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -5027,7 +4975,7 @@ struct prjprm *prj;
   strcpy(prj->name, "conic equal area");
 
   if (undefined(prj->pv[1])) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("coeset");
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
@@ -5045,7 +4993,7 @@ struct prjprm *prj;
 
   prj->w[0] = (sind(theta1) + sind(theta2))/2.0;
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("coeset");
   }
 
   prj->w[1] = 1.0/prj->w[0];
@@ -5086,7 +5034,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COE) {
-    if (status = coeset(prj)) return status;
+    if ((status = coeset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -5150,7 +5098,7 @@ int stat[];
           } else {
             t = 0.0;
             istat  = 1;
-            status = PRJERR_BAD_PIX;
+            status = PRJERR_BAD_PIX_SET("coex2s");
           }
         } else {
           t = asind(w);
@@ -5163,9 +5111,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -5189,7 +5134,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COE) {
-    if (status = coeset(prj)) return status;
+    if ((status = coeset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -5282,7 +5227,7 @@ struct prjprm *prj;
   strcpy(prj->name, "conic equidistant");
 
   if (undefined(prj->pv[1])) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("codset");
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
@@ -5302,7 +5247,7 @@ struct prjprm *prj;
   }
 
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("codset");
   }
 
   prj->w[1] = 1.0/prj->w[0];
@@ -5335,7 +5280,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COD) {
-    if (status = codset(prj)) return status;
+    if ((status = codset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -5413,7 +5358,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COD) {
-    if (status = codset(prj)) return status;
+    if ((status = codset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -5507,7 +5452,7 @@ struct prjprm *prj;
   strcpy(prj->name, "conic orthomorphic");
 
   if (undefined(prj->pv[1])) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("cooset");
   }
   if (undefined(prj->pv[2])) prj->pv[2] = 0.0;
   if (prj->r0 == 0.0) prj->r0 = R2D;
@@ -5534,14 +5479,14 @@ struct prjprm *prj;
     prj->w[0] = log(cos2/cos1)/log(tan2/tan1);
   }
   if (prj->w[0] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("cooset");
   }
 
   prj->w[1] = 1.0/prj->w[0];
 
   prj->w[3] = prj->r0*(cos1/prj->w[0])/pow(tan1,prj->w[0]);
   if (prj->w[3] == 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("cooset");
   }
   prj->w[2] = prj->w[3]*pow(tand((90.0 - prj->pv[1])/2.0),prj->w[0]);
   prj->w[4] = 1.0/prj->w[3];
@@ -5572,7 +5517,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COO) {
-    if (status = cooset(prj)) return status;
+    if ((status = cooset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -5630,7 +5575,7 @@ int stat[];
         } else {
           t = 0.0;
           istat  = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("coox2s");
         }
       } else {
         t = 90.0 - 2.0*atand(pow(r*prj->w[4],prj->w[1]));
@@ -5642,9 +5587,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -5668,7 +5610,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != COO) {
-    if (status = cooset(prj)) return status;
+    if ((status = cooset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -5715,7 +5657,7 @@ int stat[];
       r = 0.0;
       if (prj->w[0] >= 0.0) {
         istat  = 1;
-        status = PRJERR_BAD_WORLD;
+        status = PRJERR_BAD_WORLD_SET("coos2x");
       }
     } else {
       r = prj->w[3]*pow(tand((90.0 - *thetap)/2.0),prj->w[0]);
@@ -5728,9 +5670,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -5768,7 +5707,7 @@ struct prjprm *prj;
   strcpy(prj->name, "Bonne's");
 
   if (undefined(prj->pv[1])) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("bonset");
   }
 
   if (prj->pv[1] == 0.0) {
@@ -5825,7 +5764,7 @@ int stat[];
   }
 
   if (prj->flag != BON) {
-    if (status = bonset(prj)) return status;
+    if ((status = bonset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -5916,7 +5855,7 @@ int stat[];
   }
 
   if (prj->flag != BON) {
-    if (status = bonset(prj)) return status;
+    if ((status = bonset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -6046,7 +5985,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PCO) {
-    if (status = pcoset(prj)) return status;
+    if ((status = pcoset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -6180,7 +6119,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != PCO) {
-    if (status = pcoset(prj)) return status;
+    if ((status = pcoset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -6307,7 +6246,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TSC) {
-    if (status = tscset(prj)) return status;
+    if ((status = tscset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -6354,7 +6293,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("tscx2s");
           continue;
         }
       } else {
@@ -6362,7 +6301,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("tscx2s");
           continue;
         }
       }
@@ -6419,9 +6358,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -6446,7 +6382,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != TSC) {
-    if (status = tscset(prj)) return status;
+    if ((status = tscset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -6559,14 +6495,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("tscs2x");
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("tscs2x");
         }
         yf = copysign(1.0, yf);
       }
@@ -6577,9 +6513,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -6686,7 +6619,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CSC) {
-    if (status = cscset(prj)) return status;
+    if ((status = cscset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -6733,7 +6666,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("cscx2s");
           continue;
         }
       } else {
@@ -6741,7 +6674,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("cscx2s");
           continue;
         }
       }
@@ -6841,9 +6774,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -6884,7 +6814,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != CSC) {
-    if (status = cscset(prj)) return status;
+    if ((status = cscset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -7018,14 +6948,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("cscs2x");
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("cscs2x");
         }
         yf = copysign(1.0, yf);
       }
@@ -7036,9 +6966,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -7117,7 +7044,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != QSC) {
-    if (status = qscset(prj)) return status;
+    if ((status = qscset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -7164,7 +7091,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("qscx2s");
           continue;
         }
       } else {
@@ -7172,7 +7099,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("qscx2s");
           continue;
         }
       }
@@ -7235,7 +7162,7 @@ int stat[];
           *phip = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("qscx2s");
           continue;
         }
 
@@ -7333,9 +7260,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -7362,7 +7286,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != QSC) {
-    if (status = qscset(prj)) return status;
+    if ((status = qscset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -7545,14 +7469,14 @@ int stat[];
       if (fabs(xf) > 1.0) {
         if (fabs(xf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("qscs2x");
         }
         xf = copysign(1.0, xf);
       }
       if (fabs(yf) > 1.0) {
         if (fabs(yf) > 1.0+tol) {
           istat  = 1;
-          status = PRJERR_BAD_WORLD;
+          status = PRJERR_BAD_WORLD_SET("qscs2x");
         }
         yf = copysign(1.0, yf);
       }
@@ -7563,9 +7487,6 @@ int stat[];
     }
   }
 
-  if (status == PRJERR_BAD_WORLD) {
-    PRJERR_BAD_WORLD_SET(prj);
-  }
   return status;
 }
 
@@ -7625,7 +7546,7 @@ struct prjprm *prj;
   prj->divergent = 0;
 
   if (prj->pv[1] <= 0.0 || prj->pv[2] <= 0.0) {
-    return PRJERR_BAD_PARAM_SET(prj);
+    return PRJERR_BAD_PARAM_SET("hpxset");
   }
 
   prj->m = ((int)(prj->pv[1]+0.5))%2;
@@ -7678,7 +7599,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != HPX) {
-    if (status = hpxset(prj)) return status;
+    if ((status = hpxset(prj))) return status;
   }
 
   if (ny > 0) {
@@ -7699,7 +7620,7 @@ int stat[];
   rowlen = nx*spt;
   for (ix = 0; ix < nx; ix++, rowoff += spt, xp += sxy) {
     s = prj->w[1] * (*xp + prj->x0);
-    /* x_c for K odd or theta > 0. */ 
+    /* x_c for K odd or theta > 0. */
     t = -180.0 + (2.0 * floor((*xp + 180.0) * prj->w[7]) + 1.0) * prj->w[6];
     t = prj->w[1] * (*xp - t);
 
@@ -7749,7 +7670,7 @@ int stat[];
           s = 0.0;
           t = 0.0;
           istat  = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("hpxx2s");
         } else {
           s = 1.0/sigma;
           t = asind(t);
@@ -7780,7 +7701,7 @@ int stat[];
           *phip   = 0.0;
           *thetap = 0.0;
           *(statp++) = 1;
-          status = PRJERR_BAD_PIX;
+          status = PRJERR_BAD_PIX_SET("hpxx2s");
         }
       }
 
@@ -7791,13 +7712,10 @@ int stat[];
         *thetap = 0.0;
         *(statp++) = 1;
       }
-      status = PRJERR_BAD_PIX;
+      status = PRJERR_BAD_PIX_SET("hpxx2s");
     }
   }
 
-  if (status == PRJERR_BAD_PIX) {
-    PRJERR_BAD_PIX_SET(prj);
-  }
   return status;
 }
 
@@ -7822,7 +7740,7 @@ int stat[];
   /* Initialize. */
   if (prj == 0x0) return PRJERR_NULL_POINTER;
   if (prj->flag != HPX) {
-    if (status = hpxset(prj)) return status;
+    if ((status = hpxset(prj))) return status;
   }
 
   if (ntheta > 0) {
@@ -7842,7 +7760,7 @@ int stat[];
   for (iphi = 0; iphi < nphi; iphi++, rowoff += sxy, phip += spt) {
     xi = prj->w[0] * (*phip) - prj->x0;
 
-    /* phi_c for K odd or theta > 0. */ 
+    /* phi_c for K odd or theta > 0. */
     t = -180.0 + (2.0*floor((*phip+180.0) * prj->w[7]) + 1.0) * prj->w[6];
     t = prj->w[0] * (*phip - t);
 

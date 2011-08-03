@@ -28,11 +28,12 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: spc.c,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: spc.c,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
 *===========================================================================*/
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "wcsmath.h"
@@ -72,6 +73,9 @@ const char *spc_errmsg[] = {
   "One or more of x coordinates were invalid",
   "One or more of the spec coordinates were invalid"};
 
+/* Convenience macro for invoking wcserr_set(). */
+#define SPC_ERRMSG(status) WCSERR_SET(status), spc_errmsg[status]
+
 
 #define C 2.99792458e8
 
@@ -84,8 +88,6 @@ int spcini(struct spcprm *spc)
 
   if (spc == 0x0) return SPCERR_NULL_POINTER;
 
-  wcserr_ini(&spc->err);
-  
   spc->flag = 0;
 
   strcpy(spc->type, "    ");
@@ -105,6 +107,8 @@ int spcini(struct spcprm *spc)
 
   spc->isGrism = 0;
 
+  spc->err = 0x0;
+
   spc->spxX2P = 0x0;
   spc->spxP2S = 0x0;
   spc->spxS2P = 0x0;
@@ -118,7 +122,8 @@ int spcini(struct spcprm *spc)
 int spcprt(const struct spcprm *spc)
 
 {
-  int i;
+  char hext[32];
+  int  i;
 
   if (spc == 0x0) return SPCERR_NULL_POINTER;
 
@@ -171,10 +176,20 @@ int spcprt(const struct spcprm *spc)
   }
 
   wcsprintf("    isGrism: %d\n", spc->isGrism);
-  wcsprintf("     spxX2P: %p\n", (void *)spc->spxX2P);
-  wcsprintf("     spxP2S: %p\n", (void *)spc->spxP2S);
-  wcsprintf("     spxS2P: %p\n", (void *)spc->spxS2P);
-  wcsprintf("     spxP2X: %p\n", (void *)spc->spxP2X);
+
+  wcsprintf("        err: %p\n", (void *)spc->err);
+  if (spc->err) {
+    wcserr_prt(spc->err, "");
+  }
+
+  wcsprintf("     spxX2P: %s\n",
+    wcsutil_fptr2str((int (*)())spc->spxX2P, hext));
+  wcsprintf("     spxP2S: %s\n",
+    wcsutil_fptr2str((int (*)())spc->spxP2S, hext));
+  wcsprintf("     spxS2P: %s\n",
+    wcsutil_fptr2str((int (*)())spc->spxS2P, hext));
+  wcsprintf("     spxP2X: %s\n",
+    wcsutil_fptr2str((int (*)())spc->spxP2X, hext));
 
   return 0;
 }
@@ -184,16 +199,19 @@ int spcprt(const struct spcprm *spc)
 int spcset(struct spcprm *spc)
 
 {
+  static const char *function = "spcset";
+
   char   ctype[9], ptype, xtype;
-  int    restreq, status;
+  int    restreq;
   double alpha, beta_r, crvalX, dn_r, dXdS, epsilon, G, m, lambda_r, n_r,
          t, restfrq, restwav, theta;
+  struct wcserr **err;
 
   if (spc == 0x0) return SPCERR_NULL_POINTER;
+  err = &(spc->err);
 
   if (undefined(spc->crval)) {
-    return WCSERR_SET(
-      &spc->err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Spectral crval is undefined");
   }
 
@@ -206,9 +224,9 @@ int spcset(struct spcprm *spc)
   sprintf(ctype, "%s-%s", spc->type, spc->code);
   restfrq = spc->restfrq;
   restwav = spc->restwav;
-  if ((status = spcspx_err(ctype, spc->crval, restfrq, restwav, &ptype, &xtype,
-                           &restreq, &crvalX, &dXdS, &spc->err))) {
-    return status;
+  if (spcspxe(ctype, spc->crval, restfrq, restwav, &ptype, &xtype, &restreq,
+              &crvalX, &dXdS, &(spc->err))) {
+    return (spc->err)->status;
   }
 
   /* Satisfy rest frequency/wavelength requirements. */
@@ -472,18 +490,22 @@ int spcx2s(
   int stat[])
 
 {
+  static const char *function = "spcx2s";
+
   int statP2S, status = 0, statX2P;
   double beta;
   register int ix;
   register int *statp;
   register const double *xp;
   register double *specp;
-
+  struct wcserr **err;
 
   /* Initialize. */
   if (spc == 0x0) return SPCERR_NULL_POINTER;
+  err = &(spc->err);
+
   if (spc->flag == 0) {
-    if (status = spcset(spc)) return status;
+    if (spcset(spc)) return (spc->err)->status;
   }
 
   /* Convert intermediate world coordinate x to X. */
@@ -512,11 +534,10 @@ int spcx2s(
       if (statX2P == SPXERR_BAD_INSPEC_COORD) {
         status = SPCERR_BAD_X;
       } else if (statX2P == SPXERR_BAD_SPEC_PARAMS) {
-        return WCSERR_SET(
-          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+        return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
           "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return WCSERR_SET(&spc->err, statX2P, spc_errmsg[statX2P]);
+        return wcserr_set(SPC_ERRMSG(statX2P));
       }
     }
   }
@@ -529,17 +550,16 @@ int spcx2s(
       if (statP2S == SPXERR_BAD_INSPEC_COORD) {
         status = SPCERR_BAD_X;
       } else if (statP2S == SPXERR_BAD_SPEC_PARAMS) {
-        return WCSERR_SET(
-          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+        return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
           "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return WCSERR_SET(&spc->err, statP2S, spc_errmsg[statP2S]);
+        return wcserr_set(SPC_ERRMSG(statP2S));
       }
     }
   }
 
-  if (status == SPCERR_BAD_X) {
-    WCSERR_SET(&spc->err, SPCERR_BAD_X, spc_errmsg[SPCERR_BAD_X]);
+  if (status) {
+    wcserr_set(SPC_ERRMSG(status));
   }
   return status;
 }
@@ -556,18 +576,22 @@ int spcs2x(
   int stat[])
 
 {
+  static const char *function = "spcs2x";
+
   int statP2X, status = 0, statS2P;
   double beta, s;
   register int ispec;
   register int *statp;
   register const double *specp;
   register double *xp;
-
+  struct wcserr **err;
 
   /* Initialize. */
   if (spc == 0x0) return SPCERR_NULL_POINTER;
+  err = &(spc->err);
+
   if (spc->flag == 0) {
-    if (status = spcset(spc)) return status;
+    if (spcset(spc)) return (spc->err)->status;
   }
 
   /* Apply the linear step of the algorithm chain to convert the S-type */
@@ -577,11 +601,10 @@ int spcs2x(
       if (statS2P == SPXERR_BAD_INSPEC_COORD) {
         status = SPCERR_BAD_SPEC;
       } else if (statS2P == SPXERR_BAD_SPEC_PARAMS) {
-        return WCSERR_SET(
-          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+        return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
           "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return WCSERR_SET(&spc->err, statS2P, spc_errmsg[statS2P]);
+        return wcserr_set(SPC_ERRMSG(statS2P));
       }
     }
 
@@ -604,11 +627,10 @@ int spcs2x(
       if (statP2X == SPCERR_BAD_SPEC) {
         status = SPCERR_BAD_SPEC;
       } else if (statP2X == SPXERR_BAD_SPEC_PARAMS) {
-        return WCSERR_SET(
-          &spc->err, SPCERR_BAD_SPEC_PARAMS,
+        return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
           "Invalid spectral parameters: Frequency or wavelength is 0");
       } else {
-        return WCSERR_SET(&spc->err, statP2X, spc_errmsg[statP2X]);
+        return wcserr_set(SPC_ERRMSG(statP2X));
       }
     }
   }
@@ -641,8 +663,8 @@ int spcs2x(
     *xp /= spc->w[2];
   }
 
-  if (status == SPCERR_BAD_SPEC) {
-    WCSERR_SET(&spc->err, SPCERR_BAD_SPEC, spc_errmsg[SPCERR_BAD_SPEC]);
+  if (status) {
+    wcserr_set(SPC_ERRMSG(status));
   }
   return status;
 }
@@ -660,11 +682,13 @@ int spctyp(
   int  *restreq)
 
 {
-  return spctyp_err(
+  return spctype(
     ctypei, stype, scode, sname, units, ptype, xtype, restreq, NULL);
 }
 
-int spctyp_err(
+/*--------------------------------------------------------------------------*/
+
+int spctype(
   const char ctypei[9],
   char stype[],
   char scode[],
@@ -673,9 +697,11 @@ int spctyp_err(
   char *ptype,
   char *xtype,
   int  *restreq,
-  struct wcserr *err)
+  struct wcserr **err)
 
 {
+  static const char *function = "spctype";
+
   char ctype[9], ptype_t, sname_t[32], units_t[8], xtype_t;
   int  restreq_t = 0;
 
@@ -732,8 +758,7 @@ int spctyp_err(
     strcpy(units_t, "");
     ptype_t = 'V';
   } else {
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Unknown spectral type '%s'", ctype);
   }
 
@@ -742,16 +767,14 @@ int spctyp_err(
   if ((xtype_t = ctype[5]) == ' ') {
     /* The algorithm code must be completely blank. */
     if (strcmp(ctype+4, "    ") != 0) {
-      return WCSERR_SET(
-        err, SPCERR_BAD_SPEC_PARAMS,
+      return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
         "Invalid spectral algorithm '%s'", ctype+4);
     }
 
     xtype_t = ptype_t;
 
   } else if (ctype[4] != '-') {
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Invalid spectral type '%s'", ctype);
 
   } else if (strcmp(ctype+5, "LOG") == 0 || strcmp(ctype+5, "TAB") == 0) {
@@ -760,8 +783,7 @@ int spctyp_err(
   } else if (xtype_t == 'G') {
     /* Validate the algorithm code. */
     if (ctype[6] != 'R') {
-      return WCSERR_SET(
-        err, SPCERR_BAD_SPEC_PARAMS,
+      return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
         "Invalid spectral algorithm '%s'", xtype_t);
     }
 
@@ -773,21 +795,19 @@ int spctyp_err(
       /* ...in air. */
       xtype_t = 'a';
     } else {
-      return WCSERR_SET(
-        err, SPCERR_BAD_SPEC_PARAMS,
+      return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
         "Invalid spectral algorithm '%s'", xtype_t);
     }
 
   } else if (ctype[6] != '2') {
     /* Algorithm code has invalid syntax. */
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Invalid spectral algorithm syntax '%s'", xtype_t);
   } else if (ctype[7] != ptype_t && ctype[7] != '?') {
     /* The P-, and S-type variables are inconsistent. */
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
-      "In spectral type '%s', P- and S-type variables are inconsistent", ctype);
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
+      "In spectral type '%s', P- and S-type variables are inconsistent",
+      ctype);
 
   } else if (ctype[7] == ctype[5]) {
     /* Degenerate algorithm code. */
@@ -806,8 +826,7 @@ int spctyp_err(
     }
   } else if (strchr("LT", (int)xtype_t) == 0) {
     /* Invalid X-type variable code. */
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "In spectral type '%s', invalid X-type variable code", ctype);
   }
 
@@ -842,11 +861,13 @@ int spcspx(
   double *dXdS)
 
 {
-  return spcspx_err(
-    ctypeS, crvalS, restfrq, restwav, ptype, xtype, restreq, crvalX, dXdS, NULL);
+  return spcspxe(ctypeS, crvalS, restfrq, restwav, ptype, xtype, restreq,
+                 crvalX, dXdS, 0x0);
 }
 
-int spcspx_err(
+/*--------------------------------------------------------------------------*/
+
+int spcspxe(
   const char ctypeS[9],
   double crvalS,
   double restfrq,
@@ -856,40 +877,46 @@ int spcspx_err(
   int *restreq,
   double *crvalX,
   double *dXdS,
-  struct wcserr *err)
+  struct wcserr **err)
 
 {
+  static const char *function = "spcspxe";
+
   char scode[4], stype[5], type[8];
   int  status;
   double dPdS, dXdP;
   struct spxprm spx;
 
+
   /* Analyse the spectral axis code. */
-  if (status = spctyp_err(
-        ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
+  if ((status = spctype(ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq,
+                        err))) {
     return status;
   }
 
   if (strstr("LT", xtype)) {
     /* Can't handle logarithmic or tabular coordinates. */
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Can't handle logarithmic or tabular coordinates");
   }
 
   /* Do we have rest frequency and/or wavelength as required? */
   if ((*restreq)%3 && restfrq == 0.0 && restwav == 0.0) {
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Missing required rest frequency or wavelength");
   }
 
   /* Compute all spectral parameters and their derivatives. */
   strcpy(type, stype);
+  spx.err = (err ? *err : 0x0);
   if ((status = specx(type, crvalS, restfrq, restwav, &spx))) {
-    wcserr_copy(err, &spx.err);
-    err->status = SPCERR_BAD_SPEC_PARAMS;
-    return SPCERR_BAD_SPEC_PARAMS;
+    status = SPCERR_BAD_SPEC_PARAMS;
+    if (err) {
+      (*err)->status = status;
+    } else {
+      free(spx.err);
+    }
+    return status;
   }
 
 
@@ -1006,11 +1033,13 @@ int spcxps(
   double *dSdX)
 
 {
-  return spcxps_err(
-    ctypeS, crvalX, restfrq, restwav, ptype, xtype, restreq, crvalS, dSdX, NULL);
+  return spcxpse(ctypeS, crvalX, restfrq, restwav, ptype, xtype, restreq,
+                 crvalS, dSdX, NULL);
 }
 
-int spcxps_err(
+/*--------------------------------------------------------------------------*/
+
+int spcxpse(
   const char ctypeS[9],
   double crvalX,
   double restfrq,
@@ -1020,31 +1049,31 @@ int spcxps_err(
   int *restreq,
   double *crvalS,
   double *dSdX,
-  struct wcserr *err)
+  struct wcserr **err)
 
 {
+  static const char *function = "spcxpse";
+
   char scode[4], stype[5], type[8];
   int  status;
   double dPdX, dSdP;
   struct spxprm spx;
 
   /* Analyse the spectral axis type. */
-  if (status = spctyp_err(
-        ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq, err)) {
+  if ((status = spctype(ctypeS, stype, scode, 0x0, 0x0, ptype, xtype, restreq,
+                        err))) {
     return status;
   }
 
   if (strstr("LT", xtype)) {
     /* Can't handle logarithmic or tabular coordinates. */
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Can't handle logarithmic or tabular coordinates");
   }
 
   /* Do we have rest frequency and/or wavelength as required? */
   if ((*restreq)%3 && restfrq == 0.0 && restwav == 0.0) {
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Missing required rest frequency or wavelength");
   }
 
@@ -1059,10 +1088,15 @@ int spcxps_err(
     strcpy(type, "VELO");
   }
 
-  if ((status = specx(type, crvalX, restfrq, restwav, &spx))) {
-    wcserr_copy(err, &spx.err);
-    err->status = SPCERR_BAD_SPEC_PARAMS;
-    return SPCERR_BAD_SPEC_PARAMS;
+  spx.err = (err ? *err : 0x0);
+  if (specx(type, crvalX, restfrq, restwav, &spx)) {
+    status = SPCERR_BAD_SPEC_PARAMS;
+    if (err) {
+      (*err)->status = status;
+    } else {
+      free(spx.err);
+    }
+    return status;
   }
 
 
@@ -1173,11 +1207,13 @@ int spctrn(
   double *cdeltS2)
 
 {
-  return spctrn_err(
-    ctypeS1, crvalS1, cdeltS1, restfrq, restwav, ctypeS2, crvalS2, cdeltS2, NULL);
+  return spctrne(ctypeS1, crvalS1, cdeltS1, restfrq, restwav,
+                 ctypeS2, crvalS2, cdeltS2, NULL);
 }
 
-int spctrn_err(
+/*--------------------------------------------------------------------------*/
+
+int spctrne(
   const char ctypeS1[9],
   double crvalS1,
   double cdeltS1,
@@ -1186,15 +1222,17 @@ int spctrn_err(
   char   ctypeS2[9],
   double *crvalS2,
   double *cdeltS2,
-  struct wcserr *err)
+  struct wcserr **err)
 
 {
+  static const char *function = "spctrne";
+
   char *cp, ptype1, ptype2, xtype1, xtype2;
   int  restreq, status;
   double crvalX, dS2dX, dXdS1;
 
-  if ((status = spcspx_err(ctypeS1, crvalS1, restfrq, restwav, &ptype1,
-                           &xtype1, &restreq, &crvalX, &dXdS1, err))) {
+  if ((status = spcspxe(ctypeS1, crvalS1, restfrq, restwav, &ptype1, &xtype1,
+                        &restreq, &crvalX, &dXdS1, err))) {
     return status;
   }
 
@@ -1215,15 +1253,14 @@ int spctrn_err(
     }
   }
 
-  if ((status = spcxps_err(ctypeS2, crvalX, restfrq, restwav, &ptype2, &xtype2,
-                           &restreq, crvalS2, &dS2dX, err))) {
+  if ((status = spcxpse(ctypeS2, crvalX, restfrq, restwav, &ptype2, &xtype2,
+                        &restreq, crvalS2, &dS2dX, err))) {
     return status;
   }
 
   /* Are the X-types compatible? */
   if (xtype2 != xtype1) {
-    return WCSERR_SET(
-      err, SPCERR_BAD_SPEC_PARAMS,
+    return wcserr_set(WCSERR_SET(SPCERR_BAD_SPEC_PARAMS),
       "Incompatible X-types '%c' and '%c'", xtype1, xtype2);
   }
 

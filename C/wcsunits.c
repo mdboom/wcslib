@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcsunits.c,v 4.7 2011/02/07 07:03:42 cal103 Exp $
+  $Id: wcsunits.c,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
 *===========================================================================*/
 
 #include <math.h>
@@ -90,6 +90,8 @@ const char *wcsunits_funcs[] = {
   "ln",
   "exp"};
 
+/*--------------------------------------------------------------------------*/
+
 int wcsunits(
   const char have[],
   const char want[],
@@ -98,35 +100,38 @@ int wcsunits(
   double *power)
 
 {
-  return wcsunits_err(
+  return wcsunitse(
     have, want, scale, offset, power, 0x0);
 }
 
-int wcsunits_err(
+/*--------------------------------------------------------------------------*/
+
+int wcsunitse(
   const char have[],
   const char want[],
   double *scale,
   double *offset,
   double *power,
-  struct wcserr *err)
+  struct wcserr **err)
 
 {
+  static const char *function = "wcsunitse";
+
   int    func1, func2, i, status;
   double scale1, scale2, units1[WCSUNITS_NTYPE], units2[WCSUNITS_NTYPE];
 
-  if ((status = wcsulex_err(have, &func1, &scale1, units1, err))) {
+  if ((status = wcsulexe(have, &func1, &scale1, units1, err))) {
     return status;
   }
 
-  if ((status = wcsulex_err(want, &func2, &scale2, units2, err))) {
+  if ((status = wcsulexe(want, &func2, &scale2, units2, err))) {
     return status;
   }
 
   /* Check conformance. */
   for (i = 0; i < WCSUNITS_NTYPE; i++) {
     if (units1[i] != units2[i]) {
-      return WCSERR_SET(
-        err, UNITSERR_BAD_UNIT_SPEC,
+      return wcserr_set(WCSERR_SET(UNITSERR_BAD_UNIT_SPEC),
         "Mismatched units type '%s': have '%s', want '%s'",
         wcsunits_types[i], have, want);
     }
@@ -194,28 +199,30 @@ int wcsunits_err(
 
   default:
     /* Internal parser error. */
-    return WCSERR_SET(
-      err, UNITSERR_PARSER_ERROR,
+    return wcserr_set(WCSERR_SET(UNITSERR_PARSER_ERROR),
       "Internal units parser error");
   }
 
   return 0;
 
- fail_mismatched_function:
-  return WCSERR_SET(
-    err, UNITSERR_BAD_FUNCS,
+fail_mismatched_function:
+  return wcserr_set(WCSERR_SET(UNITSERR_BAD_FUNCS),
     "Mismatched unit functions: have '%s' (%s), want '%s' (%s)",
     have, wcsunits_funcs[func1], want, wcsunits_funcs[func2]);
 }
 
+/*--------------------------------------------------------------------------*/
+
 int wcsutrn(int ctrl, char unitstr[])
 
 {
-  return wcsutrn_err(ctrl, unitstr, 0x0);
+  return wcsutrne(ctrl, unitstr, 0x0);
 }
+
+/*--------------------------------------------------------------------------*/
 
 int wcsulex(const char unitstr[], int *func, double *scale, double units[])
 
 {
-  return wcsulex_err(unitstr, func, scale, units, 0x0);
+  return wcsulexe(unitstr, func, scale, units, 0x0);
 }

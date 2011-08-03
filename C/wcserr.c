@@ -29,34 +29,39 @@
   Author: Mark Calabretta, Australia Telescope National Facility
   Module author: Michael Droettboom
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id:  $
+  $Id$
 *===========================================================================*/
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "wcserr.h"
 
-void wcserr_ini(
+#include "wcserr.h"
+#include "wcsprintf.h"
+
+/*--------------------------------------------------------------------------*/
+
+int wcserr_ini(
   struct wcserr *err)
 
 {
+  if (err == 0x0) {
+    return 1;
+  }
+
   memset(err, 0, sizeof(struct wcserr));
+
+  return 0;
 }
 
-int wcserr_copy(
-  struct wcserr* dst,
-  const struct wcserr* src)
-
-{
-  memcpy(dst, src, sizeof(struct wcserr));
-  return dst->status;
-}
+/*--------------------------------------------------------------------------*/
 
 int wcserr_set(
-  struct wcserr *err,
+  struct wcserr **err,
   int status,
-  const char *source_file,
+  const char *function,
+  const char *file,
   int line_no,
   const char *format,
   ...)
@@ -67,15 +72,61 @@ int wcserr_set(
   if (err == 0x0) {
     return status;
   }
-  
-  err->status = status;
+
+  if (*err == 0x0) {
+    *err = calloc(1, sizeof(struct wcserr));
+  }
+
+  (*err)->status   = status;
+  (*err)->function = function;
+  (*err)->file     = file;
+  (*err)->line_no  = line_no;
 
   va_start(argp, format);
-  vsnprintf(err->msg, WCSERR_MESSAGE_LENGTH, format, argp);
+  vsnprintf((*err)->msg, WCSERR_MSG_LENGTH, format, argp);
   va_end(argp);
 
-  strncpy(err->source_file, source_file, 80);
-  err->line_no = line_no;
-
   return status;
+}
+
+/*--------------------------------------------------------------------------*/
+
+int wcserr_copy(
+  const struct wcserr *src,
+  struct wcserr **dst)
+
+{
+  if (src == 0x0) {
+    return 1;
+  }
+
+  if (dst == 0x0) {
+    return src->status;
+  }
+
+  if (*dst == 0x0) {
+    *dst = calloc(1, sizeof(struct wcserr));
+  }
+
+  memcpy(*dst, src, sizeof(struct wcserr));
+  return (*dst)->status;
+}
+
+/*--------------------------------------------------------------------------*/
+
+int wcserr_prt(
+  const struct wcserr *err,
+  const char *prefix)
+
+{
+  if (err == 0x0) {
+    return 0;
+  }
+
+  if (prefix == 0x0) prefix = "";
+
+  wcsprintf("%sERROR %d in %s() at line %d of file %s:\n%s  %s.\n", prefix,
+    err->status, err->function, err->line_no, err->file, prefix, err->msg);
+
+  return 0;
 }
