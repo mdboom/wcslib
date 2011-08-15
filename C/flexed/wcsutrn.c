@@ -3958,7 +3958,7 @@ char *wcsutrntext;
 #line 1 "wcsutrn.l"
 /*============================================================================
 
-  WCSLIB 4.7 - an implementation of the FITS WCS standard.
+  WCSLIB 4.8 - an implementation of the FITS WCS standard.
   Copyright (C) 1995-2011, Mark Calabretta
 
   This file is part of WCSLIB.
@@ -3986,7 +3986,7 @@ char *wcsutrntext;
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcsutrn.c,v 4.7.1.1 2011/02/07 07:04:22 cal103 Exp cal103 $
+  $Id: wcsutrn.c,v 4.8 2011/08/15 08:05:54 cal103 Exp $
 *=============================================================================
 *
 * wcsutrn.l is a Flex description file containing the definition of a lexical
@@ -4011,15 +4011,16 @@ char *wcsutrntext;
 #include <stdlib.h>
 #include <string.h>
 
+#include "wcserr.h"
 #include "wcsunits.h"
 
-#define YY_DECL int wcsutrn(int ctrl, char unitstr[])
+#define YY_DECL int wcsutrne(int ctrl, char unitstr[], struct wcserr **err)
 
 /* Used in preempting the call to exit() by yy_fatal_error(). */
 jmp_buf wcsutrn_abort_jmp_env;
 #define exit(status) longjmp(wcsutrn_abort_jmp_env, status)
 
-#line 4023 "wcsutrn.c"
+#line 4024 "wcsutrn.c"
 
 #define INITIAL 0
 #define NEXT 1
@@ -4161,7 +4162,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 74 "wcsutrn.l"
+#line 75 "wcsutrn.l"
+
+	static const char *function = "wcsutrne";
 
 	char orig[80], subs[80];
 	int bracket = 0;
@@ -4178,7 +4181,8 @@ YY_DECL
 	
 	/* Return here via longjmp() invoked by yy_fatal_error(). */
 	if (setjmp(wcsutrn_abort_jmp_env)) {
-	  return 9;
+	  return wcserr_set(WCSERR_SET(UNITSERR_PARSER_ERROR),
+	    "Internal units translator error parsing '%s'", unitstr);
 	}
 	
 	BEGIN(INITIAL);
@@ -4187,7 +4191,7 @@ YY_DECL
 	fprintf(stderr, "\n%s ->\n", unitstr);
 #endif
 
-#line 4191 "wcsutrn.c"
+#line 4195 "wcsutrn.c"
 
 	if ( !(yy_init) )
 		{
@@ -4246,7 +4250,7 @@ do_action:	/* This label is used only to access EOF actions. */
 	{ /* beginning of action switch */
 case 1:
 YY_RULE_SETUP
-#line 99 "wcsutrn.l"
+#line 103 "wcsutrn.l"
 {
 	  /* Looks like a keycomment. */
 	  strcat(unitstr, "[");
@@ -4255,13 +4259,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 105 "wcsutrn.l"
+#line 109 "wcsutrn.l"
 /* Discard leading whitespace. */
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 107 "wcsutrn.l"
+#line 111 "wcsutrn.l"
 {
 	  /* Non-alphabetic character. */
 	  strcat(unitstr, wcsutrntext);
@@ -4272,7 +4276,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 115 "wcsutrn.l"
+#line 119 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "Angstrom");
@@ -4281,7 +4285,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 121 "wcsutrn.l"
+#line 125 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "arcmin");
@@ -4290,7 +4294,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 127 "wcsutrn.l"
+#line 131 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "arcsec");
@@ -4299,7 +4303,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 133 "wcsutrn.l"
+#line 137 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "beam");
@@ -4308,7 +4312,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 139 "wcsutrn.l"
+#line 143 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "byte");
@@ -4317,7 +4321,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 145 "wcsutrn.l"
+#line 149 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "d");
@@ -4326,7 +4330,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 151 "wcsutrn.l"
+#line 155 "wcsutrn.l"
 {
 	  unsafe = 1;
 	  strcpy(orig, wcsutrntext);
@@ -4336,7 +4340,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 158 "wcsutrn.l"
+#line 162 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "deg");
@@ -4345,7 +4349,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 164 "wcsutrn.l"
+#line 168 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "GHz");
@@ -4354,7 +4358,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 170 "wcsutrn.l"
+#line 174 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "h");
@@ -4363,7 +4367,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 176 "wcsutrn.l"
+#line 180 "wcsutrn.l"
 {
 	  unsafe = 1;
 	  strcpy(orig, wcsutrntext);
@@ -4373,7 +4377,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 183 "wcsutrn.l"
+#line 187 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "Hz");
@@ -4382,7 +4386,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 189 "wcsutrn.l"
+#line 193 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "kHz");
@@ -4391,7 +4395,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 195 "wcsutrn.l"
+#line 199 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "Jy");
@@ -4400,7 +4404,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 201 "wcsutrn.l"
+#line 205 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "K");
@@ -4409,7 +4413,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 207 "wcsutrn.l"
+#line 211 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "km");
@@ -4418,7 +4422,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 213 "wcsutrn.l"
+#line 217 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "m");
@@ -4427,7 +4431,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 219 "wcsutrn.l"
+#line 223 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "min");
@@ -4436,7 +4440,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 225 "wcsutrn.l"
+#line 229 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "MHz");
@@ -4445,7 +4449,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 231 "wcsutrn.l"
+#line 235 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "ohm");
@@ -4454,7 +4458,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 237 "wcsutrn.l"
+#line 241 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "Pa");
@@ -4463,7 +4467,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 243 "wcsutrn.l"
+#line 247 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "pixel");
@@ -4472,7 +4476,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 249 "wcsutrn.l"
+#line 253 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "rad");
@@ -4481,7 +4485,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 255 "wcsutrn.l"
+#line 259 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "s");
@@ -4490,7 +4494,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 261 "wcsutrn.l"
+#line 265 "wcsutrn.l"
 {
 	  unsafe = 1;
 	  strcpy(orig, wcsutrntext);
@@ -4500,7 +4504,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 268 "wcsutrn.l"
+#line 272 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "V");
@@ -4509,7 +4513,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 274 "wcsutrn.l"
+#line 278 "wcsutrn.l"
 {
 	  strcpy(orig, wcsutrntext);
 	  strcpy(subs, "yr");
@@ -4518,7 +4522,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 280 "wcsutrn.l"
+#line 284 "wcsutrn.l"
 {
 	  /* Not a recognized alias. */
 	  strcpy(orig, wcsutrntext);
@@ -4528,7 +4532,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 287 "wcsutrn.l"
+#line 291 "wcsutrn.l"
 {
 	  /* Reject the alias match. */
 	  strcat(orig, wcsutrntext);
@@ -4538,7 +4542,7 @@ YY_RULE_SETUP
 case 33:
 /* rule 33 can match eol */
 YY_RULE_SETUP
-#line 293 "wcsutrn.l"
+#line 297 "wcsutrn.l"
 {
 	  /* Discard separating whitespace. */
 	  unput(wcsutrntext[wcsutrnleng-1]);
@@ -4546,7 +4550,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 298 "wcsutrn.l"
+#line 302 "wcsutrn.l"
 {
 	  /* Compress separating whitespace. */
 	  strcat(unitstr, subs);
@@ -4559,7 +4563,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 308 "wcsutrn.l"
+#line 312 "wcsutrn.l"
 {
 	  /* Copy anything else unchanged. */
 	  strcat(unitstr, subs);
@@ -4571,7 +4575,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 317 "wcsutrn.l"
+#line 321 "wcsutrn.l"
 {
 	  /* Copy out remaining input. */
 	  strcat(unitstr, wcsutrntext);
@@ -4580,7 +4584,7 @@ YY_RULE_SETUP
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(NEXT):
 case YY_STATE_EOF(FLUSH):
-#line 322 "wcsutrn.l"
+#line 326 "wcsutrn.l"
 {
 	  /* End-of-string. */
 	  if (*subs) {
@@ -4589,15 +4593,19 @@ case YY_STATE_EOF(FLUSH):
 	  }
 	
 	  wcsutrnlex_destroy();
-	  return unsafe ? 12 : status;
+	  if (unsafe) {
+	    return wcserr_set(WCSERR_SET(UNITSERR_UNSAFE_TRANS),
+	      "Unsafe unit translation in '%s'", unitstr);
+	  }
+	  return status;
 	}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 333 "wcsutrn.l"
+#line 341 "wcsutrn.l"
 ECHO;
 	YY_BREAK
-#line 4601 "wcsutrn.c"
+#line 4609 "wcsutrn.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -5560,7 +5568,7 @@ void wcsutrnfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 333 "wcsutrn.l"
+#line 341 "wcsutrn.l"
 
 
 
