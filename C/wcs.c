@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcs.c,v 4.8 2011/08/15 08:05:53 cal103 Exp $
+  $Id: wcs.c,v 4.8.1.2 2011/11/17 03:10:27 cal103 Exp cal103 $
 *===========================================================================*/
 
 #include <math.h>
@@ -1320,7 +1320,7 @@ int wcsprt(const struct wcsprm *wcs)
 
   WCSPRINTF_PTR("        err: ", wcs->err, "\n");
   if (wcs->err) {
-    wcserr_prt(wcs->err, "");
+    wcserr_prt(wcs->err, "             ");
   }
 
   wcsprintf("        lin: (see below)\n");

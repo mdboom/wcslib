@@ -15,11 +15,11 @@
 #              programmers' manual.
 #   distclean (or realclean): Recursively delete all platform-dependent files
 #              generated during the build, preserving only the programmers'
-#              manual (which is normally provided pre-built).  It is the one
-#              to use between builds for multiple platforms.
+#              manual and man pages (which are normally provided pre-built).
+#              It is the one to use between builds for multiple platforms.
 #   cleanest:  Like distclean, but deletes everything that can be regenerated
-#              from the source files, including the programmers' manual, but
-#              excluding 'configure'.
+#              from the source files, including the programmers' manual and
+#              man pages, but excluding 'configure'.
 #   show:      Print the values of important variables used in this and the
 #              other makefiles.
 #   writable:  Run chmod recursively to make all sources writable.
@@ -32,10 +32,14 @@
 #
 # Author: Mark Calabretta, Australia Telescope National Facility
 # http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: GNUmakefile,v 4.8 2011/08/15 08:05:55 cal103 Exp $
+# $Id: GNUmakefile,v 4.8.1.3 2011/12/05 06:38:54 cal103 Exp cal103 $
 #-----------------------------------------------------------------------------
 # Get configure settings.
 include makedefs
+
+ifeq "$(CHECK)" "nopgplot"
+  TSTDIRS := $(filter-out pgsbox,$(TSTDIRS))
+endif
 
 .PHONY : build check chmod clean cleaner cleanest distclean install \
          realclean show tests writable
@@ -47,7 +51,7 @@ build :
 	     $(MAKE) -k -C $$DIR build ; \
 	   done
 
-check tests : show
+check tests :: show
 	-@ echo ''
 	-@ $(TIMER)
 	 @ for DIR in $(SUBDIRS) ; do \
@@ -60,6 +64,17 @@ check tests : show
 	     $(TIMER) ; \
 	     $(MAKE) -k -C $$DIR $@ ; \
 	   done
+
+check ::
+	-@ echo ''
+	-@ echo 'Summary of results for non-graphical tests'
+	-@ echo '------------------------------------------'
+	-@ cat ./*/test_results
+	 @ if grep 'FAIL:' ./*/test_results > /dev/null ; then \
+	     exit 1 ; \
+	   else \
+	     exit 0 ; \
+	   fi
 
 install :
 	 @ for DIR in $(INSTDIR) ; do \
@@ -139,6 +154,7 @@ config.status : configure
 
 dist :
 	   $(MAKE) -C doxygen cleanest build
+	   $(MAKE) -C utils man
 	   $(MAKE) distclean
 	-@ echo $(WCSLIBPKG)/C/RCS        >  wcslib.X
 	-@ echo $(WCSLIBPKG)/C/flexed/RCS >> wcslib.X
