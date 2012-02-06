@@ -1,7 +1,7 @@
 /*============================================================================
 
-  WCSLIB 4.8 - an implementation of the FITS WCS standard.
-  Copyright (C) 1995-2011, Mark Calabretta
+  WCSLIB 4.10 - an implementation of the FITS WCS standard.
+  Copyright (C) 1995-2012, Mark Calabretta
 
   This file is part of WCSLIB.
 
@@ -28,7 +28,7 @@
 
   Author: Mark Calabretta, Australia Telescope National Facility
   http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: twcssub.c,v 4.8.1.1 2011/08/15 08:07:06 cal103 Exp cal103 $
+  $Id: twcssub.c,v 4.10 2012/02/05 23:41:44 cal103 Exp $
 *=============================================================================
 *
 * twcssub tests wcssub() which extracts the coordinate description for a
@@ -153,12 +153,13 @@ int main()
   wcsprt(&wcs);
 
 
-  /* Extract the coordinate description for a subimage. */
-  nsub = 3;
+  /* Extract the coordinate description for a subimage and add a new axis. */
+  nsub = 4;
   wcsext.flag = -1;
   axes[0] = WCSSUB_LONGITUDE;
   axes[1] = WCSSUB_LATITUDE;
   axes[2] = -(WCSSUB_SPECTRAL | WCSSUB_STOKES);
+  axes[3] = 0;
   printf("\n\nExtracted contents of wcsprm struct:\n");
   if (wcssub(1, &wcs, &nsub, axes, &wcsext)) {
     wcsperr(&wcsext, "");
