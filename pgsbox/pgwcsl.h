@@ -1,7 +1,7 @@
 /*============================================================================
 
-  PGSBOX 4.10 - draw curvilinear coordinate axes for PGPLOT.
-  Copyright (C) 1997-2012, Mark Calabretta
+  PGSBOX 4.22 - draw curvilinear coordinate axes for PGPLOT.
+  Copyright (C) 1997-2014, Mark Calabretta
 
   This file is part of PGSBOX.
 
@@ -16,19 +16,13 @@
   more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PGSBOX.  If not, see <http://www.gnu.org/licenses/>.
+  along with PGSBOX.  If not, see http://www.gnu.org/licenses.
 
-  Correspondence concerning PGSBOX may be directed to:
-    Internet email: mcalabre@atnf.csiro.au
-    Postal address: Dr. Mark Calabretta
-                    Australia Telescope National Facility, CSIRO
-                    PO Box 76
-                    Epping NSW 1710
-                    AUSTRALIA
+  Direct correspondence concerning PGSBOX to mark@calabretta.id.au
 
-  Author: Mark Calabretta, Australia Telescope National Facility
-  http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: pgwcsl.h,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+  Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+  http://www.atnf.csiro.au/people/Mark.Calabretta
+  $Id: pgwcsl.h,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 *=============================================================================
 *
 *   pgwcsl_() is an NLFUNC for PGSBOX that defines curvilinear celestial

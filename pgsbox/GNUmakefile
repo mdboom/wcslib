@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# GNU makefile for building PGSBOX 4.10
+# GNU makefile for building PGSBOX 4.22
 #
 # Summary of the main targets
 # ---------------------------
@@ -26,12 +26,12 @@
 #      instead and re-run configure.
 #
 #   2) In compiling the test programs, this makefile assumes that the
-#      WCSLIB 4.10 sources reside in ../C and ../Fortran (as in the
+#      WCSLIB 4.22 sources reside in ../C and ../Fortran (as in the
 #      distribution kit).
 #
-# Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: GNUmakefile,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+# Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+# http://www.atnf.csiro.au/people/Mark.Calabretta
+# $Id: GNUmakefile,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 #-----------------------------------------------------------------------------
 # Get configure settings.
 include ../makedefs
@@ -129,7 +129,7 @@ install : build
 	   $(RM) $(LIBDIR)/libpgsbox.a
 	   $(LN_S) $(PGSBOXLIB) $(LIBDIR)/libpgsbox.a
 	-  if [ "$(SHRLIB)" != "" ] ; then \
-	     $(INSTALL) -m 644 $(SHRLIB) $(LIBDIR) ; \
+	     $(INSTALL) -m 755 $(SHRLIB) $(LIBDIR) ; \
 	     if [ -h "$(LIBDIR)/$(SONAME)" ] ; then \
 	       $(RM) $(LIBDIR)/$(SONAME) ; \
 	     fi ; \
@@ -182,15 +182,15 @@ $(WCSLIB) :
 pgtest : pgtest.f fscan.f lngvel.f $(PGSBOXLIB) $(WCSLIB)
 	-@ $(RM) $@
 	-@ echo ''
-	   $(FC) -I../Fortran $(FFLAGS) $(LDFLAGS) -o $@ $^ \
+	   $(FC) -I../Fortran $(FFLAGS) -o $@ $^ $(LDFLAGS) \
 	     $(PGPLOTLIB) $(LIBS)
 
 cpgtest : cpgtest.c fscan.f lngvel.f $(PGSBOXLIB) $(WCSLIB)
 	-@ $(RM) $@
 	-@ echo ''
 	   $(FC) -I../Fortran $(FFLAGS) -c fscan.f lngvel.f
-	   $(CC) $(CPPFLAGS) $(PGPLOTINC) $(CFLAGS) $(LDFLAGS) -o $@ \
-	     $(^:.f=.o) $(PGPLOTLIB) $(FLIBS) $(LIBS)
+	   $(CC) $(CPPFLAGS) $(PGPLOTINC) $(CFLAGS) -o $@ $(^:.f=.o) \
+	     $(LDFLAGS) $(PGPLOTLIB) $(FLIBS) $(LIBS)
 	-@ $(RM) fscan.o lngvel.o
 
 GNUmakefile : ../makedefs ;

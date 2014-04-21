@@ -1,7 +1,7 @@
 /*============================================================================
 
-  WCSLIB 4.10 - an implementation of the FITS WCS standard.
-  Copyright (C) 1995-2012, Mark Calabretta
+  WCSLIB 4.22 - an implementation of the FITS WCS standard.
+  Copyright (C) 1995-2014, Mark Calabretta
 
   This file is part of WCSLIB.
 
@@ -16,19 +16,13 @@
   more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with WCSLIB.  If not, see <http://www.gnu.org/licenses/>.
+  along with WCSLIB.  If not, see http://www.gnu.org/licenses.
 
-  Correspondence concerning WCSLIB may be directed to:
-    Internet email: mcalabre@atnf.csiro.au
-    Postal address: Dr. Mark Calabretta
-                    Australia Telescope National Facility, CSIRO
-                    PO Box 76
-                    Epping NSW 1710
-                    AUSTRALIA
+  Direct correspondence concerning WCSLIB to mark@calabretta.id.au
 
-  Author: Mark Calabretta, Australia Telescope National Facility
-  http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcs_f.c,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+  Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+  http://www.atnf.csiro.au/people/Mark.Calabretta
+  $Id: wcs_f.c,v 4.22 2014/04/12 15:03:53 mcalabre Exp $
 *===========================================================================*/
 
 #include <stdio.h>
@@ -49,6 +43,7 @@
 #define wcsfree_ F77_FUNC(wcsfree, WCSFREE)
 #define wcsprt_  F77_FUNC(wcsprt,  WCSPRT)
 #define wcsperr_ F77_FUNC(wcsperr, WCSPERR)
+#define wcsbchk_ F77_FUNC(wcsbchk, WCSBCHK)
 #define wcsset_  F77_FUNC(wcsset,  WCSSET)
 #define wcsp2s_  F77_FUNC(wcsp2s,  WCSP2S)
 #define wcss2p_  F77_FUNC(wcss2p,  WCSS2P)
@@ -702,6 +697,14 @@ int wcsperr_(int *wcs, const char prefix[72])
   fflush(NULL);
 
   return wcsperr((struct wcsprm *)wcs, prefix_);
+}
+
+/*--------------------------------------------------------------------------*/
+
+int wcsbchk_(int *wcs, int *bounds)
+
+{
+  return wcsbchk((struct wcsprm *)wcs, *bounds);
 }
 
 /*--------------------------------------------------------------------------*/

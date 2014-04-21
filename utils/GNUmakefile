@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# GNU makefile for WCSLIB 4.10 utilities: fitshdr, HPXcvt, wcsgrid and wcsware.
+# GNU makefile for WCSLIB 4.22 utilities: fitshdr, HPXcvt, wcsgrid and wcsware.
 #
 # Summary of the main targets
 # ---------------------------
@@ -12,12 +12,12 @@
 #   1: If you need to make changes then preferably modify ../makedefs.in
 #      instead and re-run configure.
 #
-#   2: In compiling these utilities, this makefile assumes that the WCSLIB 4.10
+#   2: In compiling these utilities, this makefile assumes that the WCSLIB 4.22
 #      sources reside in ../{pgsbox,C} (as in the distribution kit).
 #
-# Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: GNUmakefile,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+# Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+# http://www.atnf.csiro.au/people/Mark.Calabretta
+# $Id: GNUmakefile,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 #-----------------------------------------------------------------------------
 # Get configure settings.
 include ../makedefs
@@ -74,16 +74,16 @@ wcsware : wcsware.c $(GETWCSTAB) $(WCSLIB)
 	-@ echo ''
 	   $(CC) -DDO_CFITSIO $(CPPFLAGS) -I../pgsbox -I../C $(CFITSIOINC) \
 	     $(CFLAGS) -c -o $@.o $<
-	   $(LD) $(LDFLAGS) -o $@ $@.o $(GETWCSTAB) $(CFITSIOLIB) $(WCSLIB) \
+	   $(LD) -o $@ $@.o $(GETWCSTAB) $(LDFLAGS) $(CFITSIOLIB) $(WCSLIB) \
 	     $(FLIBS) $(LIBS)
 	-@ $(RM) $@.o
 
-wcsgrid : wcsgrid.c $(PGSBOXLIB) $(GETWCSTAB) $(WCSLIB)
+wcsgrid : wcsgrid.c $(GETWCSTAB) $(PGSBOXLIB) $(WCSLIB)
 	-@ echo ''
 	   $(CC) -DDO_CFITSIO $(CPPFLAGS) -I../pgsbox -I../C $(PGPLOTINC) \
 	     $(CFITSIOINC) $(CFLAGS) -c -o $@.o $<
-	   $(LD) $(LDFLAGS) -o $@ $@.o $(PGSBOXLIB) $(PGPLOTLIB) \
-	     $(GETWCSTAB) $(CFITSIOLIB) $(WCSLIB) $(FLIBS) $(LIBS)
+	   $(LD) -o $@ $@.o $(GETWCSTAB) $(LDFLAGS) $(PGSBOXLIB) \
+	     $(PGPLOTLIB) $(CFITSIOLIB) $(WCSLIB) $(FLIBS) $(LIBS)
 	-@ $(RM) $@.o
 
 ../C/getwcstab.o :
@@ -114,7 +114,7 @@ install : build
 	-  if [ ! -d "$(MANDIR)" ] ; then \
 	     $(INSTALL) -d -m 2775 $(MANDIR)/man1 ; \
 	   fi
-	   $(INSTALL) -m 755 $(MAN) $(MANDIR)/man1
+	   $(INSTALL) -m 644 $(MAN) $(MANDIR)/man1
 
 GNUmakefile : ../makedefs ;
 

@@ -1,7 +1,7 @@
 /*============================================================================
 
-  WCSLIB 4.10 - an implementation of the FITS WCS standard.
-  Copyright (C) 1995-2012, Mark Calabretta
+  WCSLIB 4.22 - an implementation of the FITS WCS standard.
+  Copyright (C) 1995-2014, Mark Calabretta
 
   This file is part of WCSLIB.
 
@@ -16,20 +16,14 @@
   more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with WCSLIB.  If not, see <http://www.gnu.org/licenses/>.
+  along with WCSLIB.  If not, see http://www.gnu.org/licenses.
 
-  Correspondence concerning WCSLIB may be directed to:
-    Internet email: mcalabre@atnf.csiro.au
-    Postal address: Dr. Mark Calabretta
-                    Australia Telescope National Facility, CSIRO
-                    PO Box 76
-                    Epping NSW 1710
-                    AUSTRALIA
+  Direct correspondence concerning WCSLIB to mark@calabretta.id.au
 
-  Author: Mark Calabretta, Australia Telescope National Facility
+  Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
   Module author: Michael Droettboom
-  http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcserr.c,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+  http://www.atnf.csiro.au/people/Mark.Calabretta
+  $Id: wcserr.c,v 4.22 2014/04/12 15:03:52 mcalabre Exp $
 *===========================================================================*/
 
 #include <stdarg.h>
@@ -87,11 +81,11 @@ int wcserr_prt(
 /*--------------------------------------------------------------------------*/
 
 int wcserr_clear(
-  struct wcserr **err)
+  struct wcserr **errp)
 
 {
-  if (*err) free(*err);
-  *err = 0x0;
+  if (*errp) free(*errp);
+  *errp = 0x0;
 
   return 0;
 }
@@ -99,7 +93,7 @@ int wcserr_clear(
 /*--------------------------------------------------------------------------*/
 
 int wcserr_set(
-  struct wcserr **err,
+  struct wcserr **errp,
   int status,
   const char *function,
   const char *file,
@@ -108,31 +102,37 @@ int wcserr_set(
   ...)
 
 {
+  char fmt[128];
+  struct wcserr *err;
   va_list argp;
 
   if (!wcserr_enabled) return status;
 
-  if (err == 0x0) {
+  if (errp == 0x0) {
     return status;
   }
+  err = *errp;
 
   if (status) {
-    if (*err == 0x0) {
-      *err = calloc(1, sizeof(struct wcserr));
+    if (err == 0x0) {
+      *errp = err = calloc(1, sizeof(struct wcserr));
     }
 
-    (*err)->status   = status;
-    (*err)->function = function;
-    (*err)->file     = file;
-    (*err)->line_no  = line_no;
+    err->status   = status;
+    err->function = function;
+    err->file     = file;
+    err->line_no  = line_no;
+
+    /* Workaround for a compiler segv from gcc 4.2.1 in MacOSX 10.7. */
+    strncpy(fmt, format, 128);
 
     va_start(argp, format);
-    vsnprintf((*err)->msg, WCSERR_MSG_LENGTH, format, argp);
+    vsnprintf(err->msg, WCSERR_MSG_LENGTH, fmt, argp);
     va_end(argp);
 
-  } else {
-    if (*err) free(*err);
-    *err = 0x0;
+  } else if (err) {
+    free(err);
+    *errp = 0x0;
   }
 
   return status;

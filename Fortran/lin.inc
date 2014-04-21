@@ -1,7 +1,7 @@
 *=======================================================================
 *
-* WCSLIB 4.10 - an implementation of the FITS WCS standard.
-* Copyright (C) 1995-2012, Mark Calabretta
+* WCSLIB 4.22 - an implementation of the FITS WCS standard.
+* Copyright (C) 1995-2014, Mark Calabretta
 *
 * This file is part of WCSLIB.
 *
@@ -18,17 +18,11 @@
 * You should have received a copy of the GNU Lesser General Public
 * License along with WCSLIB.  If not, see http://www.gnu.org/licenses.
 *
-* Correspondence concerning WCSLIB may be directed to:
-*   Internet email: mcalabre@atnf.csiro.au
-*   Postal address: Dr. Mark Calabretta
-*                   Australia Telescope National Facility, CSIRO
-*                   PO Box 76
-*                   Epping NSW 1710
-*                   AUSTRALIA
+* Direct correspondence concerning WCSLIB to mark@calabretta.id.au
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
-* http://www.atnf.csiro.au/~mcalabre/index.html
-* $Id: lin.inc,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+* http://www.atnf.csiro.au/people/Mark.Calabretta
+* $Id: lin.inc,v 4.22 2014/04/12 15:03:53 mcalabre Exp $
 *=======================================================================
 
 *     Functions.

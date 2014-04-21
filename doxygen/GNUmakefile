@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# GNU makefile for building the documentation for WCSLIB 4.10
+# GNU makefile for building the documentation for WCSLIB 4.22
 #
 # Summary of the main targets
 # ---------------------------
@@ -13,9 +13,9 @@
 #   1) If you need to make changes then preferably modify ../makedefs.in
 #      instead and re-run configure.
 #
-# Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: GNUmakefile,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+# Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+# http://www.atnf.csiro.au/people/Mark.Calabretta
+# $Id: GNUmakefile,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 #-----------------------------------------------------------------------------
 # Get configure settings.
 include ../makedefs
@@ -61,7 +61,8 @@ html : ../html/index.html
 pdf : ../wcslib.pdf
 
 ../wcslib.pdf : latex/refman.tex
-	   $(MAKE) -C latex refman.pdf
+	-  $(MAKE) -C latex refman.pdf
+	   cd latex ; pdflatex refman ; pdflatex refman
 	-@ $(RM) $@
 	   mv latex/refman.pdf $@
 

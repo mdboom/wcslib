@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# GNU makefile definitions for building WCSLIB 4.10
+# GNU makefile definitions for building WCSLIB 4.22
 #
 # makedefs is generated from makedefs.in by configure.  It contains variable
 # definitions and some general-purpose rules for building WCSLIB.
@@ -39,11 +39,11 @@
 #      compiled separately without this option.
 #
 #      The shared library will be installed with version number, e.g. as
-#      libwcs.so.4.10 or libwcs.4.10.dylib with or without the symlink
+#      libwcs.so.4.22 or libwcs.4.22.dylib with or without the symlink
 #      required to make it visible to the linker (controlled by the SHRLN
 #      variable).  On Macs it is deliberately not created because its very
 #      existence precludes static linking with the cctools linker.  You can
-#      still link dynamically by using -lwcs.4.10.
+#      still link dynamically by using -lwcs.4.22.
 #
 #   4) PGPLOT is Tim Pearson's Fortran graphics library with separate C
 #      interface available from astro.caltech.edu.  It is only required by
@@ -72,9 +72,9 @@
 #      tfitshdr, tbth1, tpih1 and tpih2 by setting preprocessor macro
 #      -DDO_CFITSIO.
 #
-# Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: makedefs.in,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+# Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+# http://www.atnf.csiro.au/people/Mark.Calabretta
+# $Id: makedefs.in,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 #-----------------------------------------------------------------------------
 # Version.
   LIBVER    := @LIBVER@
@@ -134,6 +134,7 @@
   INCDIR   := $(DESTDIR)@includedir@/wcslib-$(LIBVER)
   INCLINK  := $(DESTDIR)@includedir@/wcslib
   DOCDIR   := $(DESTDIR)@docdir@
+  DOCLINK  := $(dir $(DESTDIR)@docdir@)wcslib
   HTMLDIR  := $(DESTDIR)@htmldir@
   PDFDIR   := $(DESTDIR)@pdfdir@
   MANDIR   := $(DESTDIR)@mandir@
@@ -213,6 +214,7 @@ show :: wcsconfig.h
 	-@ echo '  INCDIR      := $(INCDIR)'
 	-@ echo '  INCLINK     := $(INCLINK)'
 	-@ echo '  DOCDIR      := $(DOCDIR)'
+	-@ echo '  DOCLINK     := $(DOCLINK)'
 	-@ echo '  HTMLDIR     := $(HTMLDIR)'
 	-@ echo '  PDFDIR      := $(PDFDIR)'
 	-@ echo '  MANDIR      := $(MANDIR)'

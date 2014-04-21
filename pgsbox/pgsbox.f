@@ -1,7 +1,7 @@
 *=======================================================================
 *
-* PGSBOX 4.10 - draw curvilinear coordinate axes for PGPLOT.
-* Copyright (C) 1997-2012, Mark Calabretta
+* PGSBOX 4.22 - draw curvilinear coordinate axes for PGPLOT.
+* Copyright (C) 1997-2014, Mark Calabretta
 *
 * This file is part of PGSBOX.
 *
@@ -18,17 +18,11 @@
 * You should have received a copy of the GNU Lesser General Public
 * License along with PGSBOX.  If not, see http://www.gnu.org/licenses.
 *
-* Correspondence concerning PGSBOX may be directed to:
-*   Internet email: mcalabre@atnf.csiro.au
-*   Postal address: Dr. Mark Calabretta
-*                   Australia Telescope National Facility, CSIRO
-*                   PO Box 76
-*                   Epping NSW 1710
-*                   AUSTRALIA
+* Direct correspondence concerning PGSBOX to mark@calabretta.id.au
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
-* http://www.atnf.csiro.au/~mcalabre/index.html
-* $Id: pgsbox.f,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+* http://www.atnf.csiro.au/people/Mark.Calabretta
+* $Id: pgsbox.f,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 *=======================================================================
 *
 * PGSBOX draws and labels a curvilinear coordinate grid.  The caller
@@ -450,7 +444,7 @@
 *   3: Notwithstanding the fact that PGSBOX declares NLCPRM, NLIPRM,
 *      and NLDPRM as single dimension arrays of length NLC, NLI, and
 *      NLD, NLFUNC may treat these as higher-dimensional arrays, for
-*      example, NLDPRM(2,NLD).  (The FORTRAN standard requires that
+*      example, NLDPRM(2,NLD).  (The Fortran standard requires that
 *      only the last dimension is adjustable.)
 *
 *=======================================================================
@@ -468,8 +462,8 @@
      :          K, KX, L, LABCTL, LABDEN, LDIV(2), LTABL(6,2:6), NC,
      :          NG(2), NG1, NG2, NLC, NLD, NLI, NLIPRM(NLI), NP,
      :          NSTEP(2), NWJ, NX, NY, TCODE(2,4)
-      REAL      BLC(2), BLC_(2), S, TRC(2), TRC_(2), WXY(4), X1, X2,
-     :          XPOINT, XR(BUFSIZ), XSCL, XSPAN, XTOL, XVP1, XVP2,
+      REAL      BLC(2), BLC_(2), RTIKLN, S, TRC(2), TRC_(2), WXY(4), X1,
+     :          X2, XPOINT, XR(BUFSIZ), XSCL, XSPAN, XTOL, XVP1, XVP2,
      :          Y1, Y2, YR(BUFSIZ), YSCL, YSPAN, YTOL, YVP1, YVP2
       DOUBLE PRECISION CONTXT(20), CACHE(4,0:NC), DW(2), DX, DY, FACT,
      :          G0(2), GSTEP(2), GRID1(0:NG1), GRID2(0:NG2),
@@ -485,8 +479,8 @@
       PARAMETER (DENS0 = 8)
 
 *     Double precision round-off tolerance.
-      DOUBLE PRECISION TOL
-      PARAMETER (TOL = 1D-8)
+      REAL    TOL
+      PARAMETER (TOL = 1E-8)
 
 *     Number of steps per grid line.
       DATA NSTEP /80, 80/
@@ -667,7 +661,6 @@
                 END IF
 
                 W1PREV = WORLD(1)
-                IYPREV = IY
               END IF
 
               IF (ISANGL(2)) THEN
@@ -687,8 +680,9 @@
                 END IF
 
                 W2PREV = WORLD(2)
-                IYPREV = IY
               END IF
+
+              IYPREV = IY
 
               IF (WORLD(1).LT.WMIN(1)) WMIN(1) = WORLD(1)
               IF (WORLD(1).GT.WMAX(1)) WMAX(1) = WORLD(1)
@@ -1117,7 +1111,7 @@
         ELSE
           SW(J) = GSTEP(J)
         END IF
-        NSTEP(J) = ANINT(DW(J)/SW(J))
+        NSTEP(J) = NINT(DW(J)/SW(J))
  70   CONTINUE
 
 
@@ -1154,6 +1148,7 @@
  80   CONTINUE
 
 *     Draw each set of grid lines.
+      RTIKLN = REAL(TIKLEN)
       OVERFL = .FALSE.
       DO 120 J = 1, 2
         IF (GCODE(J).EQ.0) GO TO 120
@@ -1388,8 +1383,8 @@
                         S = SQRT(S)/TCODE(J,FSEG)
                         IF (MAJOR) S = S/1.5
                         NP = NP + 1
-                        XR(NP) = XR(NP-1) + (X2-X1)*TIKLEN/S
-                        YR(NP) = YR(NP-1) + (Y2-Y1)*TIKLEN/S
+                        XR(NP) = XR(NP-1) + (X2-X1)*RTIKLN/S
+                        YR(NP) = YR(NP-1) + (Y2-Y1)*RTIKLN/S
 
                         CALL PGLINE(NP, XR, YR)
                         NP = 1
@@ -1482,8 +1477,8 @@
                         S = (XSCL*(X2-X1))**2 + (YSCL*(Y2-Y1))**2
                         S = SQRT(S)/TCODE(J,FSEG)
                         IF (MAJOR) S = S/1.5
-                        XR(NP-1) = X1 + (X2-X1)*TIKLEN/S
-                        YR(NP-1) = Y1 + (Y2-Y1)*TIKLEN/S
+                        XR(NP-1) = X1 + (X2-X1)*RTIKLN/S
+                        YR(NP-1) = Y1 + (Y2-Y1)*RTIKLN/S
                       END IF
 
 *                     Flush buffer.
@@ -1565,7 +1560,7 @@
 *   CACHE     D(4,0:NC) Table of points where the tick marks or grid
 *                       lines cross the frame (see PGSBOX).
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
 *=======================================================================
       SUBROUTINE PGCRLB (BLC, TRC, IDENTS, FTYPE, LABCTL, CI, NC, IC,
      :                   CACHE)
@@ -1867,7 +1862,7 @@
           IF (FTYPE(IWRLD).EQ.' ') THEN
 *           Plain numeric.
             IF (CACHE(4,J).EQ.0D0) GO TO 130
-            OMAG(IWRLD) = OMAG(IWRLD) + LOG10(ABS(CACHE(4,J)))
+            OMAG(IWRLD) = OMAG(IWRLD) + LOG10(ABS(REAL(CACHE(4,J))))
             IMAG(IWRLD) = IMAG(IWRLD) + 1
           END IF
  130    CONTINUE
@@ -2076,23 +2071,23 @@
         IF (EDGE.EQ.1) THEN
 *         Bottom.
           FJUST = 0.5
-          X = CACHE(2,J)
+          X = REAL(CACHE(2,J))
           Y = YW1 - 1.5*YCH
         ELSE IF (EDGE.EQ.2) THEN
 *         Left.
           FJUST = 1.0
           X = XW1 - 0.5*XCH
-          Y = CACHE(2,J) - YCH/2.0
+          Y = REAL(CACHE(2,J)) - YCH/2.0
         ELSE IF (EDGE.EQ.3) THEN
 *         Top.
           FJUST = 0.5
-          X = CACHE(2,J)
+          X = REAL(CACHE(2,J))
           Y = YW2 + 0.5*YCH
         ELSE IF (EDGE.EQ.4) THEN
 *         Right.
           FJUST = 0.0
           X = XW2 + 0.5*XCH
-          Y = CACHE(2,J) - YCH/2.0
+          Y = REAL(CACHE(2,J)) - YCH/2.0
         END IF
 
 *       Format the numeric label.
@@ -2241,7 +2236,7 @@
           IF (MM.NE.1) THEN
             WRITE (TEXT, '(I1)') MM
           ELSE
-*           FORTRAN is really abysmal sometimes.
+*           Fortran is really abysmal sometimes.
             WRITE (TEXT, '(I8)') PP
             DO 240 K = 1, 8
               IF (TEXT(K:K).NE.' ') GO TO 250
@@ -2573,7 +2568,7 @@
 *   These algorithms are from D.A. Hatcher, QJRAS 25, 53-55, as modified
 *   by P.T. Wallace for use in SLALIB (subroutines CLDJ and DJCL).
 *
-*   Author: Mark Calabretta, Australia Telescope National Facility
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
 *-----------------------------------------------------------------------
       SUBROUTINE PGMJD (CODE, MJD, IY, IM, ID)
 *-----------------------------------------------------------------------
@@ -2613,10 +2608,10 @@
 
 
 *=======================================================================
-* This FORTRAN wrapper on PGSBOX exists solely to define fixed-length
+* This Fortran wrapper on PGSBOX exists solely to define fixed-length
 * CHARACTER arguments for cpgsbox().
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
 *-----------------------------------------------------------------------
       SUBROUTINE PGSBOK (BLC, TRC, IDENTS, OPT, LABCTL, LABDEN, CI,
      :  GCODE, TIKLEN, NG1, GRID1, NG2, GRID2, DOEQ, NLFUNC, NLC, NLI,
@@ -2642,10 +2637,10 @@
 
 
 *=======================================================================
-* This FORTRAN wrapper on PGLBOX exists solely to define fixed-length
+* This Fortran wrapper on PGLBOX exists solely to define fixed-length
 * CHARACTER arguments for cpglbox().
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
 *-----------------------------------------------------------------------
       SUBROUTINE PGLBOK (IDENTS, OPT, LABCTL, LABDEN, CI, GCODE, TIKLEN,
      :  NG1, GRID1, NG2, GRID2, DOEQ, NC, IC, CACHE, IERR)

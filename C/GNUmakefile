@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# GNU makefile for building WCSLIB 4.10 and its test suite.
+# GNU makefile for building WCSLIB 4.22 and its test suite.
 #
 # Summary of the main targets
 # ---------------------------
@@ -29,9 +29,9 @@
 #   1) If you need to make changes then preferably modify ../makedefs.in
 #      instead and re-run configure.
 #
-# Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
-# $Id: GNUmakefile,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+# Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+# http://www.atnf.csiro.au/people/Mark.Calabretta
+# $Id: GNUmakefile,v 4.22 2014/04/12 15:03:52 mcalabre Exp $
 #-----------------------------------------------------------------------------
 # Get configure settings.
 include ../makedefs
@@ -67,9 +67,12 @@ ifneq "$(DO_WCSHDR)" ""
   CPPFLAGS += -DDO_WCSHDR
 endif
 
-# Test programs that don't require CFITSIO or PGPLOT.
+# Test programs that don't require CFITSIO or PGPLOT...
 TEST_N := tlin tlog tprj1 tsph tsphdpa tspx ttab1 twcs twcssub tpih1 tbth1 \
           tfitshdr tunits twcsfix
+
+# ...and unofficial test programs.
+TEST_n := tspcaips tspcspxe tspctrne twcs_locale
 
 # Test programs that require CFITSIO (they don't need PGPLOT).
 TEST_C := twcstab twcshdr
@@ -237,7 +240,7 @@ $(SHRLIB) : $(PICLIB)
 	     cd tmp && \
 	     trap 'cd .. ; $(RM) -r tmp' 0 1 2 3 15 ; \
 	     $(AR) x ../$(PICLIB) && \
-	     $(SHRLD) $(LDFLAGS) -o $@ *.o && \
+	     $(SHRLD) -o $@ *.o $(LDFLAGS) $(LIBS) && \
 	     mv $@ ..
 
 $(PICLIB) : $(MODULES:%.o=$(PICLIB)(%.o)) ;
@@ -253,7 +256,7 @@ install : build
 	   fi
 	-  $(LN_S) $(WCSLIB) $(LIBDIR)/libwcs.a
 	-  if [ "$(SHRLIB)" != "" ] ; then \
-	     $(INSTALL) -m 644 $(SHRLIB) $(LIBDIR) ; \
+	     $(INSTALL) -m 755 $(SHRLIB) $(LIBDIR) ; \
 	     if [ -h "$(LIBDIR)/$(SONAME)" ] ; then \
 	       $(RM) $(LIBDIR)/$(SONAME) ; \
 	     fi ; \
@@ -277,7 +280,7 @@ clean :
 
 cleaner : clean
 	-  $(RM) .gdb_history
-	-  $(RM) $(TEST_N) $(TEST_X)
+	-  $(RM) $(TEST_N) $(TEST_n) $(TEST_X)
 	-  $(RM) $(TEST_P) tpih2 twcstab twcshdr
 	-  $(RM) tofits bth.fits pih.fits wcstab.fits
 	-  $(RM) t*_cfitsio test_results
@@ -291,48 +294,48 @@ check test : tests $(TESTS:%=run_%)
 
 tests : $(TESTS) $(TEST_X)
 
-$(TEST_N) : % : test/%.c $(WCSLIB)
+$(TEST_N) $(TEST_n) : % : test/%.c $(WCSLIB)
 	-@ echo ''
-	   $(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(WCSLIB) $(LIBS)
+	   $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(WCSLIB) $(LIBS)
 	-@ $(RM) $@.o
 
 $(TEST_P) : % : test/%.c $(WCSLIB)
 	-@ echo ''
 	   $(CC) $(CPPFLAGS) $(PGPLOTINC) $(CFLAGS) -c -o $@.o $<
-	   $(LD) $(LDFLAGS) -o $@ $@.o $(PGPLOTLIB) $(WCSLIB) $(FLIBS) $(LIBS)
+	   $(LD) -o $@ $@.o $(LDFLAGS) $(PGPLOTLIB) $(WCSLIB) $(FLIBS) $(LIBS)
 	-@ $(RM) $@.o
 
 tpih2 : test/tpih2.c $(PGSBOXLIB) $(WCSLIB)
 	-@ echo ''
 	   $(CC) $(CPPFLAGS) -I../pgsbox $(PGPLOTINC) $(CFLAGS) -c -o $@.o $<
-	   $(LD) $(LDFLAGS) -o $@ $@.o $(PGSBOXLIB) $(PGPLOTLIB) $(WCSLIB) \
+	   $(LD) -o $@ $@.o $(LDFLAGS) $(PGSBOXLIB) $(PGPLOTLIB) $(WCSLIB) \
 	     $(FLIBS) $(LIBS)
 	-@ $(RM) $@.o
 
 tfitshdr_cfitsio tpih1_cfitsio tbth1_cfitsio : %_cfitsio : test/%.c $(WCSLIB)
 	-@ echo ''
 	   $(CC) -DDO_CFITSIO $(CPPFLAGS) $(CFITSIOINC) $(CFLAGS) \
-	     $(LDFLAGS) -o $@ $< $(CFITSIOLIB) $(WCSLIB) $(LIBS)
+	     -o $@ $< $(LDFLAGS) $(CFITSIOLIB) $(WCSLIB) $(LIBS)
 	-@ $(RM) $@.o
 
 tpih2_cfitsio : test/tpih2.c $(PGSBOXLIB) $(WCSLIB)
 	-@ echo ''
 	   $(CC) -DDO_CFITSIO $(CPPFLAGS) -I../pgsbox $(PGPLOTINC) \
 	     $(CFITSIOINC) $(CFLAGS) -c -o $@.o $<
-	   $(LD) $(LDFLAGS) -o $@ $@.o $(PGSBOXLIB) $(PGPLOTLIB) \
+	   $(LD) -o $@ $@.o $(LDFLAGS) $(PGSBOXLIB) $(PGPLOTLIB) \
 	     $(CFITSIOLIB) $(WCSLIB) $(FLIBS) $(LIBS)
 	-@ $(RM) $@.o
 
 twcstab : test/twcstab.c $(GETWCSTAB) $(WCSLIB)
 	-@ echo ''
-	   $(CC) $(CPPFLAGS) $(CFITSIOINC) $(CFLAGS) $(LDFLAGS) -o $@ $< \
-	     $(GETWCSTAB) $(CFITSIOLIB) $(WCSLIB) $(LIBS)
+	   $(CC) $(CPPFLAGS) $(CFITSIOINC) $(CFLAGS) -o $@ $< $(GETWCSTAB) \
+	     $(LDFLAGS) $(CFITSIOLIB) $(WCSLIB) $(LIBS)
 	-@ $(RM) $@.o
 
 twcshdr : test/twcshdr.c $(GETWCSTAB) $(WCSLIB)
 	-@ echo ''
-	   $(CC) $(CPPFLAGS) $(CFITSIOINC) $(CFLAGS) $(LDFLAGS) -o $@ $< \
-	     $(GETWCSTAB) $(CFITSIOLIB) $(WCSLIB) $(LIBS)
+	   $(CC) $(CPPFLAGS) $(CFITSIOINC) $(CFLAGS) -o $@ $< $(GETWCSTAB) \
+	     $(LDFLAGS) $(CFITSIOLIB) $(WCSLIB) $(LIBS)
 	-@ $(RM) $@.o
 
 getwcstab.o : getwcstab.c getwcstab.h
@@ -341,7 +344,7 @@ getwcstab.o : getwcstab.c getwcstab.h
 
 $(PGSBOXLIB) :
 	-@ echo ''
-	   $(MAKE) -C ../pgsbox lib
+	   $(MAKE) -C ../pgsbox $(notdir $@)
 
 tofits : test/tofits.c
 	   $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $<
@@ -368,7 +371,7 @@ show ::
 
 $(WCSLIB)(cel.o)      : cel.h prj.h sph.h wcsconfig.h wcserr.h wcsmath.h \
                         wcsprintf.h wcstrig.h
-$(WCSLIB)(fitshdr.o)  : wcsconfig.h fitshdr.h
+$(WCSLIB)(fitshdr.o)  : wcsconfig.h fitshdr.h wcsutil.h
 $(WCSLIB)(lin.o)      : lin.h wcserr.h wcsprintf.h
 $(WCSLIB)(log.o)      : log.h
 $(WCSLIB)(prj.o)      : prj.h wcsconfig.h wcserr.h wcsmath.h wcsprintf.h \
@@ -382,17 +385,17 @@ $(WCSLIB)(wcs.o)      : cel.h lin.h log.h prj.h spc.h sph.h spx.h tab.h \
                         wcs.h wcsconfig.h wcserr.h wcsmath.h wcsprintf.h \
                         wcstrig.h wcsunits.h wcsutil.h
 $(WCSLIB)(wcsbth.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcserr.h \
-                        wcshdr.h wcsmath.h
+                        wcshdr.h wcsmath.h wcsutil.h
 $(WCSLIB)(wcserr.o)   : wcserr.h wcsprintf.h
 $(WCSLIB)(wcsfix.o)   : cel.h lin.h prj.h spc.h sph.h spx.h tab.h wcs.h \
                         wcserr.h wcsfix.h wcsmath.h wcsunits.h wcsutil.h
 $(WCSLIB)(wcshdr.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcserr.h \
                         wcshdr.h wcsmath.h wcsutil.h
 $(WCSLIB)(wcspih.o)   : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcserr.h \
-                        wcshdr.h wcsmath.h
+                        wcshdr.h wcsmath.h wcsutil.h
 $(WCSLIB)(wcsprintf.o): wcsprintf.h
 $(WCSLIB)(wcstrig.o)  : wcsconfig.h wcsmath.h wcstrig.h
-$(WCSLIB)(wcsulex.o)  : wcserr.h wcsmath.h wcsunits.h
+$(WCSLIB)(wcsulex.o)  : wcserr.h wcsmath.h wcsunits.h wcsutil.h
 $(WCSLIB)(wcsunits.o) : wcserr.h wcsunits.h
 $(WCSLIB)(wcsutil.o)  : wcsutil.h
 $(WCSLIB)(wcsutrn.o)  : wcserr.h wcsunits.h
@@ -411,6 +414,8 @@ tpih2 tpih2_cfitsio : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcsconfig.h \
 tprj1   : prj.h wcsconfig.h wcserr.h wcstrig.h
 tprj2   : prj.h wcserr.h
 tspc    : spc.h spx.h wcsconfig.h wcserr.h wcstrig.h
+tspcaips: spc.h
+tspctrne: spc.h wcserr.h
 tsph    : sph.h wcsconfig.h wcstrig.h
 tsphdpa : sph.h
 tspx    : spx.h wcserr.h
@@ -421,6 +426,7 @@ tunits  : wcserr.h wcsunits.h
 twcs    : cel.h lin.h log.h prj.h spc.h sph.h spx.h tab.h wcs.h wcsconfig.h \
           wcsconfig_tests.h wcserr.h wcsfix.h wcshdr.h wcslib.h wcsmath.h \
           wcsprintf.h wcstrig.h wcsunits.h wcsutil.h
+twcs_locale : wcs.h wcserr.h wcshdr.h wcsprintf.h
 twcsfix : cel.h lin.h prj.h spc.h spx.h tab.h wcs.h wcserr.h wcsfix.h \
           wcsunits.h
 twcshdr : cel.h fitshdr.h getwcstab.h lin.h log.h prj.h spc.h sph.h spx.h \

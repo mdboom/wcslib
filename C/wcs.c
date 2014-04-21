@@ -1,7 +1,7 @@
 /*============================================================================
 
-  WCSLIB 4.10 - an implementation of the FITS WCS standard.
-  Copyright (C) 1995-2012, Mark Calabretta
+  WCSLIB 4.22 - an implementation of the FITS WCS standard.
+  Copyright (C) 1995-2014, Mark Calabretta
 
   This file is part of WCSLIB.
 
@@ -16,19 +16,13 @@
   more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with WCSLIB.  If not, see <http://www.gnu.org/licenses/>.
+  along with WCSLIB.  If not, see http://www.gnu.org/licenses.
 
-  Correspondence concerning WCSLIB may be directed to:
-    Internet email: mcalabre@atnf.csiro.au
-    Postal address: Dr. Mark Calabretta
-                    Australia Telescope National Facility, CSIRO
-                    PO Box 76
-                    Epping NSW 1710
-                    AUSTRALIA
+  Direct correspondence concerning WCSLIB to mark@calabretta.id.au
 
-  Author: Mark Calabretta, Australia Telescope National Facility
-  http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcs.c,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+  Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+  http://www.atnf.csiro.au/people/Mark.Calabretta
+  $Id: wcs.c,v 4.22 2014/04/12 15:03:52 mcalabre Exp $
 *===========================================================================*/
 
 #include <math.h>
@@ -148,9 +142,9 @@ int wcsini(int alloc, int naxis, struct wcsprm *wcs)
     wcs->m_wtb   = 0x0;
   }
 
-  if (naxis <= 0) {
+  if (naxis < 0) {
     return wcserr_set(WCSERR_SET(WCSERR_MEMORY),
-      "naxis must be positive (got %d)", naxis);
+      "naxis must not be negative (got %d)", naxis);
   }
 
 
@@ -562,6 +556,7 @@ int wcssub(
   struct wcserr **err;
 
   if (wcssrc == 0x0) return WCSERR_NULL_POINTER;
+  if (wcsdst == 0x0) return WCSERR_NULL_POINTER;
   err = &(wcsdst->err);
 
   if ((naxis = wcssrc->naxis) <= 0) {
@@ -710,7 +705,7 @@ int wcssub(
   }
 
   if ((*nsub = msub) == 0) {
-    status = 0;
+    status = wcsini(alloc, 0, wcsdst);
     goto cleanup;
   }
 
@@ -841,8 +836,12 @@ int wcssub(
   npv = 0;
   for (k = 0; k < wcssrc->npv; k++) {
     i = wcssrc->pv[k].i;
-    if (i == 0 || (i > 0 && map[i-1])) {
-      /* i == 0 is a special code for the latitude axis. */
+    if (i == 0) {
+      /* i == 0 is a special code that means "the latitude axis". */
+      wcsdst->pv[npv] = wcssrc->pv[k];
+      wcsdst->pv[npv].i = 0;
+      npv++;
+    } else if (i > 0 && map[i-1]) {
       wcsdst->pv[npv] = wcssrc->pv[k];
       wcsdst->pv[npv].i = map[i-1];
       npv++;
@@ -1068,8 +1067,10 @@ int wcsfree(struct wcsprm *wcs)
 
   wcs->flag = 0;
 
-  if (wcs->err) free(wcs->err);
-  wcs->err = 0x0;
+  if (wcs->err) {
+    free(wcs->err);
+    wcs->err = 0x0;
+  }
 
   linfree(&(wcs->lin));
   celfree(&(wcs->cel));
@@ -1476,6 +1477,24 @@ int wcsperr(const struct wcsprm *wcs, const char *prefix)
       }
     }
   }
+
+  return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+
+int wcsbchk(struct wcsprm *wcs, int bounds)
+
+{
+  int status;
+
+  if (wcs == 0x0) return WCSERR_NULL_POINTER;
+
+  if (wcs->flag != WCSSET) {
+    if ((status = wcsset(wcs))) return status;
+  }
+
+  wcs->cel.prj.bounds = bounds;
 
   return 0;
 }
@@ -2036,7 +2055,7 @@ int wcs_units(struct wcsprm *wcs)
       if (wcsunitse(wcs->cunit[i], units, &scale, &offset, &power,
                     &uniterr)) {
         wcserr_set(WCSERR_SET(WCSERR_BAD_COORD_TRANS),
-          "In CUNIT%d%.1s: %s", i, (*wcs->alt)?wcs->alt:"", uniterr->msg);
+          "In CUNIT%d%.1s: %s", i+1, (*wcs->alt)?wcs->alt:"", uniterr->msg);
         free(uniterr);
         return WCSERR_BAD_COORD_TRANS;
       }
@@ -3223,6 +3242,7 @@ int wcssptr(
   strcpy(wcs->ctype[j], ctype);
 
   /* This keeps things tidy if the spectral axis is linear. */
+  spcfree(&(wcs->spc));
   spcini(&(wcs->spc));
 
   return 0;

@@ -1,5 +1,5 @@
 *=======================================================================
-*                              PGSBOX 4.10
+*                              PGSBOX 4.22
 *-----------------------------------------------------------------------
 *
 * ATTENTION!
@@ -19,9 +19,9 @@
 *
 * New applications should use PGSBOX directly.
 *
-* Author: Mark Calabretta, Australia Telescope National Facility
-* http://www.atnf.csiro.au/~mcalabre/index.html
-* $Id: pgcrvl.f,v 4.10 2012/02/05 23:41:45 cal103 Exp $
+* Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+* http://www.atnf.csiro.au/people/Mark.Calabretta
+* $Id: pgcrvl.f,v 4.22 2014/04/12 15:03:54 mcalabre Exp $
 *=======================================================================
       SUBROUTINE PGCRVL (AXEN, IDENTS, OPT, LABCTL, LABDEN, CI, GCODE,
      :   TIKLEN, NG1, GRID1, NG2, GRID2, DOEQ, NLFUNC, NLC, NLI, NLD,

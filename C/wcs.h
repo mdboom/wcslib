@@ -1,7 +1,7 @@
 /*============================================================================
 
-  WCSLIB 4.10 - an implementation of the FITS WCS standard.
-  Copyright (C) 1995-2012, Mark Calabretta
+  WCSLIB 4.22 - an implementation of the FITS WCS standard.
+  Copyright (C) 1995-2014, Mark Calabretta
 
   This file is part of WCSLIB.
 
@@ -16,22 +16,16 @@
   more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with WCSLIB.  If not, see <http://www.gnu.org/licenses/>.
+  along with WCSLIB.  If not, see http://www.gnu.org/licenses.
 
-  Correspondence concerning WCSLIB may be directed to:
-    Internet email: mcalabre@atnf.csiro.au
-    Postal address: Dr. Mark Calabretta
-                    Australia Telescope National Facility, CSIRO
-                    PO Box 76
-                    Epping NSW 1710
-                    AUSTRALIA
+  Direct correspondence concerning WCSLIB to mark@calabretta.id.au
 
-  Author: Mark Calabretta, Australia Telescope National Facility
-  http://www.atnf.csiro.au/~mcalabre/index.html
-  $Id: wcs.h,v 4.10 2012/02/05 23:41:44 cal103 Exp $
+  Author: Mark Calabretta, Australia Telescope National Facility, CSIRO.
+  http://www.atnf.csiro.au/people/Mark.Calabretta
+  $Id: wcs.h,v 4.22 2014/04/12 15:03:52 mcalabre Exp $
 *=============================================================================
 *
-* WCSLIB 4.10 - C routines that implement the FITS World Coordinate System
+* WCSLIB 4.22 - C routines that implement the FITS World Coordinate System
 * (WCS) standard.  Refer to
 *
 *   "Representations of world coordinates in FITS",
@@ -210,7 +204,7 @@
 * wcssub() can also add axes to a wcsprm struct.  The new axes will be created
 * using the defaults set by wcsini() which produce a simple, unnamed, linear
 * axis with world coordinate equal to the pixel coordinate.  These default
-* values can be changed in before invoking wcsset().
+* values can be changed afterwards, before invoking wcsset().
 *
 * Given:
 *   alloc     int       If true, allocate memory for the crpix, etc. arrays in
@@ -231,17 +225,18 @@
 *                       subimage, etc.
 *
 *                       Use an axis number of 0 to create a new axis using
-*                       the defaults set by wcsini().
+*                       the defaults set by wcsini().  They can be changed
+*                       later.
 *
 *                       nsub (the pointer) may be set to zero, and so also may
-*                       nsub, to indicate the number of axes in the input
-*                       image; the number of axes will be returned if
+*                       *nsub, which is interpreted to mean all axes in the
+*                       input image; the number of axes will be returned if
 *                       nsub != 0x0.  axes itself (the pointer) may be set to
 *                       zero to indicate the first *nsub axes in their
 *                       original order.
 *
-*                       Set both nsub and axes to zero to do a deep copy of
-*                       one wcsprm struct to another.
+*                       Set both nsub (or *nsub) and axes to zero to do a deep
+*                       copy of one wcsprm struct to another.
 *
 *                       Subimage extraction by coordinate axis type may be
 *                       done by setting the elements of axes[] to the
@@ -255,7 +250,7 @@
 *
 *                       Refer to the notes (below) for further usage examples.
 *
-*                       On return, *nsub will contain the number of axes in
+*                       On return, *nsub will be set to the number of axes in
 *                       the subimage; this may be zero if there were no axes
 *                       of the required type(s) (in which case no memory will
 *                       be allocated).  axes[] will contain the axis numbers
@@ -378,6 +373,37 @@
 *                         1: Null wcsprm pointer passed.
 *
 *
+* wcsbchk() - Enable/disable bounds checking
+* ------------------------------------------
+* wcsbchk() is used to control bounds checking in the projection routines.
+* Note that wcsset() always enables bounds checking.  wcsbchk() will invoke
+* wcsset() on the wcsprm struct beforehand if necessary.
+*
+* Given and returned:
+*   wcs       struct wcsprm*
+*                       Coordinate transformation parameters.
+*
+* Given:
+*   bounds    int       If bounds&1 then enable strict bounds checking for the
+*                       spherical-to-Cartesian (s2x) transformation for the
+*                       AZP, SZP, TAN, SIN, ZPN, and COP projections.
+*
+*                       If bounds&2 then enable strict bounds checking for the
+*                       Cartesian-to-spherical (x2s) transformation for the
+*                       HPX and XPH projections.
+*
+*                       If bounds&4 then enable bounds checking on the native
+*                       coordinates returned by the Cartesian-to-spherical
+*                       (x2s) transformations using prjchk().
+*
+*                       Zero it to disable all checking.
+*
+* Function return value:
+*             int       Status return value:
+*                         0: Success.
+*                         1: Null wcsprm pointer passed.
+*
+*
 * wcsset() - Setup routine for the wcsprm struct
 * ----------------------------------------------
 * wcsset() sets up a wcsprm struct according to information supplied within
@@ -411,6 +437,11 @@
 *
 *                       For returns > 1, a detailed error message is set in
 *                       wcsprm::err if enabled, see wcserr_enable().
+*
+* Notes:
+*   wcsset() always enables strict bounds checking in the projection routines
+*   (via a call to prjini()).  Use wcsbchk() to modify bounds-checking after
+*   wcsset() is invoked.
 *
 *
 * wcsp2s() - Pixel-to-world transformation
@@ -851,7 +882,7 @@
 *   double restfrq
 *     (Given) The rest frequency [Hz], and/or ...
 *   double restwav
-*     (Given) ... the rest wavelength in vacuuo [m], only one of which need be
+*     (Given) ... the rest wavelength in vacuo [m], only one of which need be
 *     given, the other should be set to zero.
 *
 *   int npv
@@ -1500,6 +1531,8 @@ int wcsfree(struct wcsprm *wcs);
 int wcsprt(const struct wcsprm *wcs);
 
 int wcsperr(const struct wcsprm *wcs, const char *prefix);
+
+int wcsbchk(struct wcsprm *wcs, int bounds);
 
 int wcsset(struct wcsprm *wcs);
 
