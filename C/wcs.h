@@ -313,7 +313,7 @@
 *
 *
 * wcseq() - Compare two wcsprm structs for equality
-* --------------------------------------------------
+* -------------------------------------------------
 * wcseq() compares two wcsprm structs for equality.
 *
 * Given:
@@ -322,11 +322,6 @@
 *                       The following constants may be or'ed together to
 *                       loosen the comparison.
 *
-*                       - WCSEQ_SET: Apply wcsset() to each, to resolve, e.g.,
-*                         CDi_j vs. PCi_j.
-*                       - WCSEQ_FIX: Apply wcsfix() to each, to translate
-*                         non-standard usage.  Implies WCSEQ_SET, since
-*                         wcsfix() calls wcsset().
 *                       - WCSEQ_IGNORE_ANCILLARY: Ignores ancillary keywords,
 *                         such as DATE-OBS that don't change the WCS
 *                         transformation.
@@ -348,20 +343,7 @@
 * Function return value:
 *             int       Status return value:
 *                         0: Success.
-*                         1: Null wcsprm pointer passed.
-*                         2: Memory allocation failed.
-*                         3: Linear transformation matrix is singular.
-*                         4: Inconsistent or unrecognized coordinate axis
-*                            types.
-*                         5: Invalid parameter value.
-*                         6: Invalid coordinate transformation parameters.
-*                         7: Ill-conditioned coordinate transformation
-*                            parameters.
-*                         14: One or more of the translation functions in
-*                             wcsfix() returned an error
-*
-*                       For returns > 1, a detailed error message is set in
-*                       wcsprm::err on wcs1 if enabled, see wcserr_enable().
+*                         1: Null pointer passed.
 *
 *
 * wcscopy() macro - Copy routine for the wcsprm struct
@@ -1398,11 +1380,9 @@ extern "C" {
 #define WCSSUB_STOKES    0x1010
 
 
-#define WCSEQ_SET                  0x0001
-#define WCSEQ_FIX                  0x0002
-#define WCSEQ_IGNORE_ANCILLARY     0x0004
-#define WCSEQ_INTEGER_TRANSLATION  0x0008
-#define WCSEQ_TRANSLATION          0x0010
+#define WCSEQ_IGNORE_ANCILLARY     0x0001
+#define WCSEQ_INTEGER_TRANSLATION  0x0002
+#define WCSEQ_TRANSLATION          0x0004
 
 
 extern const char *wcs_errmsg[];
@@ -1428,9 +1408,8 @@ enum wcs_errmsg_enum {
   WCSERR_NO_SOLUTION     = 11,	/* No solution found in the specified
 				   interval. */
   WCSERR_BAD_SUBIMAGE    = 12,	/* Invalid subimage specification. */
-  WCSERR_NON_SEPARABLE   = 13,	/* Non-separable subimage coordinate
+  WCSERR_NON_SEPARABLE   = 13 	/* Non-separable subimage coordinate
 				   system. */
-  WCSERR_FIX             = 14   /* One of the wcsfix transformations failed. */
 };
 
 
